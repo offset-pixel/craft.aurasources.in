@@ -52,11 +52,46 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ==========================================================================
+   Universal Luxury Custom Scrollbar System
+   ========================================================================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 169, 110, 0.35) rgba(14, 16, 21, 0.6);
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(14, 16, 21, 0.5);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(201, 169, 110, 0.28);
+  border-radius: 6px;
+  border: 1px solid rgba(14, 16, 21, 0.6);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 169, 110, 0.58);
+  border-color: rgba(201, 169, 110, 0.2);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* App Container Layout */
 .app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   overflow: hidden;
 }
@@ -3702,8 +3737,13 @@ body {
 
 /* 1. Large Laptops / Medium Desktops (<= 1200px) */
 @media (max-width: 1200px) {
-  .studio-main {
-    grid-template-columns: var(--left-sidebar-width, 300px) 1fr var(--right-sidebar-width, 320px);
+  :root {
+    --left-sidebar-w: 280px;
+    --right-sidebar-w: 290px;
+  }
+  .studio-main,
+  .app-view.studio-main.active {
+    grid-template-columns: minmax(0, var(--left-sidebar-w, 280px)) 6px minmax(0, 1fr) 6px minmax(0, var(--right-sidebar-w, 290px));
   }
   .stage-floating-island {
     padding: 6px 10px;
@@ -3719,9 +3759,17 @@ body {
 
 /* 2. Tablets & Small Laptops (<= 992px) */
 @media (max-width: 992px) {
+  :root {
+    --left-sidebar-w: 250px;
+    --right-sidebar-w: 260px;
+  }
+  .studio-main,
+  .app-view.studio-main.active {
+    grid-template-columns: minmax(0, var(--left-sidebar-w, 250px)) 6px minmax(0, 1fr) 6px minmax(0, var(--right-sidebar-w, 260px));
+  }
   .studio-header {
-    padding: 10px 16px;
-    gap: 12px;
+    padding: 8px 14px;
+    gap: 10px;
   }
   .brand-text .tagline {
     display: none;
@@ -3731,12 +3779,12 @@ body {
     padding: 3px;
   }
   .nav-tab-btn {
-    padding: 6px 12px;
-    font-size: 0.78rem;
+    padding: 6px 10px;
+    font-size: 0.76rem;
   }
   .header-actions .action-btn {
-    padding: 7px 12px;
-    font-size: 0.78rem;
+    padding: 6px 10px;
+    font-size: 0.76rem;
   }
   
   /* Stage Island Wrap */
@@ -3754,7 +3802,7 @@ body {
 /* 3. Mobile Devices & Small Tablets (<= 768px): Stage-First Layout */
 @media (max-width: 768px) {
   :root {
-    --header-height: 56px;
+    --header-height: 54px;
   }
 
   .app-container {
@@ -3764,20 +3812,21 @@ body {
 
   /* Header compact mobile */
   .studio-header {
-    padding: 8px 10px;
+    padding: 6px 10px;
     gap: 6px;
     flex-wrap: nowrap;
+    height: var(--header-height, 54px);
   }
 
   .brand-badge .brand-logo-icon {
     width: 28px;
     height: 28px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .brand-text h1 {
-    font-size: 1.05rem;
-    letter-spacing: 1px;
+    font-size: 1rem;
+    letter-spacing: 0.8px;
   }
 
   .view-nav-tabs {
@@ -3792,7 +3841,7 @@ body {
   }
 
   .header-actions {
-    gap: 5px;
+    gap: 4px;
   }
 
   .header-actions .action-btn {
@@ -3803,57 +3852,85 @@ body {
     display: none; /* Icon-only in mobile header */
   }
 
-  /* Studio: Stage-First Fullscreen Canvas */
-  .studio-main {
-    display: block;
-    position: relative;
-    width: 100%;
-    height: calc(100dvh - var(--header-height));
-    overflow: hidden;
+  /* Studio: Stage-First Fullscreen Canvas (Override Grid) */
+  .studio-main,
+  .app-view.studio-main.active {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    height: calc(100dvh - var(--header-height, 54px)) !important;
+    overflow: hidden !important;
   }
 
   .sidebar-resizer {
     display: none !important;
   }
 
-  /* Left Gemstone Drawer -> Slide-in Sheet */
+  /* Left Gemstone Drawer -> Slide-in Touch Sheet */
   .palette-sidebar {
-    position: fixed;
-    top: var(--header-height);
-    bottom: 0;
-    left: 0;
-    width: min(340px, 88vw);
-    z-index: 90;
-    background: var(--bg-card);
-    border-right: 1px solid var(--border-gold);
-    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.7);
-    transform: translateX(-105%);
-    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    position: fixed !important;
+    top: var(--header-height, 54px) !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: min(340px, 86vw) !important;
+    height: calc(100dvh - var(--header-height, 54px)) !important;
+    z-index: 100 !important;
+    background: var(--bg-panel) !important;
+    border-right: 1px solid var(--border-medium) !important;
+    box-shadow: 12px 0 50px rgba(0, 0, 0, 0.85) !important;
+    transform: translate3d(-105%, 0, 0) !important;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
     display: flex !important;
+    flex-direction: column !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: none;
+    overflow: hidden;
   }
 
   .palette-sidebar.mobile-open {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0) !important;
+    pointer-events: auto !important;
   }
 
-  /* Right Design Inspector -> Slide-in Sheet */
+  /* Right Design Inspector -> Slide-in Touch Sheet */
   .details-sidebar {
-    position: fixed;
-    top: var(--header-height);
-    bottom: 0;
-    right: 0;
-    width: min(360px, 90vw);
-    z-index: 90;
-    background: var(--bg-card);
-    border-left: 1px solid var(--border-gold);
-    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.7);
-    transform: translateX(105%);
-    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    position: fixed !important;
+    top: var(--header-height, 54px) !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    width: min(360px, 90vw) !important;
+    height: calc(100dvh - var(--header-height, 54px)) !important;
+    z-index: 100 !important;
+    background: var(--bg-panel) !important;
+    border-left: 1px solid var(--border-medium) !important;
+    box-shadow: -12px 0 50px rgba(0, 0, 0, 0.85) !important;
+    transform: translate3d(105%, 0, 0) !important;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
     display: flex !important;
+    flex-direction: column !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: none;
+    overflow: hidden;
   }
 
   .details-sidebar.mobile-open {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0) !important;
+    pointer-events: auto !important;
+  }
+
+  /* Drawer Header Close Button styling on Mobile */
+  .palette-sidebar .panel-collapse-btn,
+  .details-sidebar .panel-collapse-btn {
+    background: rgba(255, 255, 255, 0.08);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main);
   }
 
   /* Stage Section */
