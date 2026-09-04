@@ -4768,7 +4768,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     };
 
     const attemptUnlock = () => {
-      const currentConfigPin = (typeof localStorage !== 'undefined' && localStorage.getItem('auracraft_custom_pin')) || '8888';
+      const currentConfigPin = (typeof localStorage !== 'undefined' && localStorage.getItem('auracraft_custom_pin')) || '3868';
       const entered = this.authPinBuffer || (pinInput ? pinInput.value : '');
 
       if (!entered) return;
