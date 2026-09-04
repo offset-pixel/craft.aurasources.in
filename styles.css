@@ -4178,4 +4178,184 @@ body {
   }
 }
 
+/* ==========================================================================
+   Atelier Access Security Gate & PIN Lock
+   ========================================================================== */
+.auth-gate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: radial-gradient(circle at center, rgba(20, 24, 34, 0.98) 0%, rgba(9, 11, 15, 0.99) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.auth-gate-card {
+  background: linear-gradient(180deg, rgba(28, 33, 46, 0.95) 0%, rgba(15, 18, 25, 0.99) 100%);
+  border: 1px solid rgba(201, 169, 110, 0.35);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(201, 169, 110, 0.12);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 350px;
+  padding: 28px 22px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+}
+
+.auth-gate-card.shake {
+  animation: authShake 0.4s ease-in-out;
+}
+
+@keyframes authShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.auth-brand-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(201, 169, 110, 0.22) 0%, rgba(201, 169, 110, 0.05) 100%);
+  border: 1px solid rgba(201, 169, 110, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  color: var(--accent-gold);
+  box-shadow: 0 0 20px rgba(201, 169, 110, 0.25);
+  margin: 0 auto 8px;
+}
+
+.auth-gate-brand h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.3rem;
+  color: var(--text-main);
+  letter-spacing: 1px;
+}
+
+.auth-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.auth-pin-display {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.pin-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(201, 169, 110, 0.4);
+  background: rgba(255, 255, 255, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pin-dot.filled {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 10px rgba(201, 169, 110, 0.7);
+  transform: scale(1.15);
+}
+
+.auth-input-wrap {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.auth-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 250px;
+}
+
+.numpad-btn {
+  aspect-ratio: 1;
+  max-width: 66px;
+  margin: 0 auto;
+  width: 100%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-main);
+  font-family: 'Space Grotesk', monospace;
+  font-size: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.numpad-btn:hover {
+  background: rgba(201, 169, 110, 0.15);
+  border-color: rgba(201, 169, 110, 0.35);
+  color: var(--accent-gold-light);
+}
+
+.numpad-btn:active {
+  transform: scale(0.92);
+  background: rgba(201, 169, 110, 0.3);
+}
+
+.numpad-btn.action {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.numpad-btn.action.gold {
+  background: linear-gradient(135deg, var(--accent-gold) 0%, #b38f50 100%);
+  color: #111;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 15px rgba(201, 169, 110, 0.3);
+}
+
+.auth-status-msg {
+  font-size: 0.72rem;
+  color: var(--text-subtle);
+  min-height: 18px;
+}
+
+.auth-status-msg.error {
+  color: #f87171;
+}
+
+.auth-status-msg.success {
+  color: #34d399;
+}
+
+.remember-session-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.remember-session-label input {
+  accent-color: var(--accent-gold);
+  cursor: pointer;
+}
+
 

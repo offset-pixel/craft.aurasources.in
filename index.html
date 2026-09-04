@@ -12,6 +12,54 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Atelier Access Security Gate (Client-Side Passcode Protection) -->
+  <div class="auth-gate-overlay" id="atelier-auth-gate" style="display: none;">
+    <div class="auth-gate-card">
+      <div class="auth-gate-brand">
+        <div class="auth-brand-icon">
+          <i class="fa-solid fa-gem"></i>
+        </div>
+        <h2>AuraCraft Atelier</h2>
+        <p class="auth-subtitle">Private Manufacturing & Pricing Studio</p>
+      </div>
+
+      <div class="auth-pin-display" id="auth-pin-display">
+        <div class="pin-dot" data-index="0"></div>
+        <div class="pin-dot" data-index="1"></div>
+        <div class="pin-dot" data-index="2"></div>
+        <div class="pin-dot" data-index="3"></div>
+      </div>
+
+      <div class="auth-input-wrap">
+        <input type="password" id="auth-pin-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="Enter PIN (Default: 8888)" autocomplete="off">
+      </div>
+
+      <div class="auth-numpad" id="auth-numpad">
+        <button class="numpad-btn" data-key="1">1</button>
+        <button class="numpad-btn" data-key="2">2</button>
+        <button class="numpad-btn" data-key="3">3</button>
+        <button class="numpad-btn" data-key="4">4</button>
+        <button class="numpad-btn" data-key="5">5</button>
+        <button class="numpad-btn" data-key="6">6</button>
+        <button class="numpad-btn" data-key="7">7</button>
+        <button class="numpad-btn" data-key="8">8</button>
+        <button class="numpad-btn" data-key="9">9</button>
+        <button class="numpad-btn action" data-key="clear" title="Clear PIN"><i class="fa-solid fa-delete-left"></i></button>
+        <button class="numpad-btn" data-key="0">0</button>
+        <button class="numpad-btn action gold" data-key="enter" title="Unlock Studio"><i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+
+      <div class="auth-status-msg" id="auth-status-msg">Enter Atelier PIN to access studio</div>
+
+      <div class="auth-footer-options">
+        <label class="remember-session-label">
+          <input type="checkbox" id="auth-remember-session" checked>
+          <span>Remember access on this browser</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
   <div class="app-container">
     <!-- Top Luxury Navigation Bar -->
     <header class="studio-header">
@@ -735,11 +783,36 @@
                 </div>
               </div>
             </div>
+
+            <!-- Third Column/Row: Security & Access Gate Control -->
+            <div class="hub-card" style="grid-column: 1 / -1;">
+              <div class="hub-card-header">
+                <i class="fa-solid fa-shield-halved"></i>
+                <h3>3. Atelier Security & Access Lock</h3>
+              </div>
+              <div class="hub-card-body">
+                <p class="hub-desc">Manage your client-side PIN access gate to prevent unauthorized viewing of factory costs, formulas, and atelier collections.</p>
+                
+                <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-top: 10px;">
+                  <div class="input-group" style="min-width: 180px;">
+                    <label>Change Atelier PIN (4-6 digits):</label>
+                    <input type="password" id="cfg-new-pin" maxlength="6" pattern="[0-9]*" placeholder="New PIN (e.g. 8888)" style="background: var(--bg-card); border: 1px solid var(--border-medium); padding: 8px 12px; border-radius: var(--radius-sm); color: var(--text-main); font-family: 'Space Grotesk', monospace;">
+                  </div>
+                  <button class="action-btn" id="btn-save-new-pin" style="height: 38px;">
+                    <i class="fa-solid fa-key"></i> Update PIN
+                  </button>
+                  <button class="action-btn gold" id="btn-lock-atelier-now" style="height: 38px; margin-left: auto;">
+                    <i class="fa-solid fa-lock"></i> Lock Atelier Now
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
       </div>
-    </section>>
+    </section>
             </div>
           </div>
         </div>
