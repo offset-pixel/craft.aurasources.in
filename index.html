@@ -61,6 +61,8 @@
            VIEW 1: STUDIO DESIGNER WORKSPACE (STREAMLINED LUXURY)
            ====================================================================== -->
       <section class="app-view studio-main active" id="view-studio">
+        <!-- Mobile Drawer Overlay Backdrop -->
+        <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
       
       <!-- Left Sidebar: Dedicated Gemstone Selection Drawer -->
       <aside class="palette-sidebar" id="palette-sidebar">
@@ -248,6 +250,26 @@
           <div class="sequence-ribbon" id="sequence-ribbon">
             <!-- Populated dynamically with bead mini-thumbnails -->
           </div>
+        </div>
+
+        <!-- Mobile Bottom Action Bar (Visible on touch & mobile screens <= 768px) -->
+        <div class="mobile-stage-bar" id="mobile-stage-bar">
+          <button class="mobile-bar-btn" id="btn-mobile-open-stones" title="Open Gemstones Drawer">
+            <i class="fa-solid fa-gem"></i>
+            <span>Stones</span>
+          </button>
+          <button class="mobile-bar-btn" id="btn-mobile-bits-quick" title="Adjust Beads Count">
+            <i class="fa-solid fa-circle-dot"></i>
+            <span id="mobile-bits-label">22 Beads</span>
+          </button>
+          <button class="mobile-bar-btn" id="btn-mobile-undo" title="Undo Placement">
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+            <span>Undo</span>
+          </button>
+          <button class="mobile-bar-btn" id="btn-mobile-open-inspector" title="Open Design Inspector">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Inspector</span>
+          </button>
         </div>
       </section>
 

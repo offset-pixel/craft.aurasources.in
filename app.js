@@ -1941,6 +1941,7 @@ class BraceletStudio {
 
     // 3. Bits Count display
     setTxt('bits-count-display', `${this.totalBits} Beads`);
+    setTxt('mobile-bits-label', `${this.totalBits} Beads`);
     setTxt('bom-total-bits', `${this.totalBits} Beads`);
 
     const approxCircumference = ((this.totalBits * (this.beadDiameterMm + 0.4)) / 10).toFixed(1);
@@ -2492,6 +2493,52 @@ class BraceletStudio {
       }
     });
 
+    // Touch Event Support on Canvas for Mobile & Tablet Devices
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchMoved = false;
+
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length === 1) {
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchMoved = false;
+        
+        const coords = getCanvasCoords(touch);
+        const slotIndex = findBeadAtCoord(coords.x, coords.y);
+        if (slotIndex !== -1) {
+          this.hoveredBeadIndex = slotIndex;
+          this.drawBracelet();
+        }
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches.length === 1) {
+        const touch = e.touches[0];
+        const dist = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
+        if (dist > 8) touchMoved = true;
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', (e) => {
+      if (!touchMoved && e.changedTouches && e.changedTouches.length === 1) {
+        const touch = e.changedTouches[0];
+        const coords = getCanvasCoords(touch);
+        const slotIndex = findBeadAtCoord(coords.x, coords.y);
+        if (slotIndex !== -1) {
+          this.selectedBeadIndex = slotIndex;
+          this.setBeadAt(slotIndex, this.activeStoneId);
+          this.hoveredBeadIndex = -1;
+          this.drawBracelet();
+        }
+      } else {
+        this.hoveredBeadIndex = -1;
+        this.drawBracelet();
+      }
+    }, { passive: true });
+
     canvas.addEventListener('dragover', (e) => e.preventDefault());
     canvas.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -2504,6 +2551,9 @@ class BraceletStudio {
         }
       }
     });
+
+    // Initialize Mobile-Specific Responsive Drawers & Gestures
+    this.bindMobileEvents();
   }
 
   // ============================================================================
@@ -4126,8 +4176,23 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
 
   togglePaletteSidebar(forceState) {
     const studioMain = document.getElementById('view-studio');
+    const paletteSidebar = document.getElementById('palette-sidebar');
+    const backdrop = document.getElementById('mobile-drawer-backdrop');
     const expandBtn = document.getElementById('btn-expand-left-sidebar');
     if (!studioMain) return;
+
+    // In mobile viewport, toggle the mobile drawer overlay
+    if (window.innerWidth <= 768 && paletteSidebar) {
+      const isOpen = paletteSidebar.classList.contains('mobile-open');
+      if (forceState === true || (forceState === undefined && isOpen)) {
+        paletteSidebar.classList.remove('mobile-open');
+        if (backdrop) backdrop.classList.remove('active');
+      } else {
+        paletteSidebar.classList.add('mobile-open');
+        if (backdrop) backdrop.classList.add('active');
+      }
+      return;
+    }
 
     this.isPaletteCollapsed = (forceState !== undefined) ? forceState : !this.isPaletteCollapsed;
 
@@ -4150,8 +4215,23 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
 
   toggleDetailsSidebar(forceState) {
     const studioMain = document.getElementById('view-studio');
+    const detailsSidebar = document.getElementById('details-sidebar');
+    const backdrop = document.getElementById('mobile-drawer-backdrop');
     const expandBtn = document.getElementById('btn-expand-right-sidebar');
     if (!studioMain) return;
+
+    // In mobile viewport, toggle the mobile drawer overlay
+    if (window.innerWidth <= 768 && detailsSidebar) {
+      const isOpen = detailsSidebar.classList.contains('mobile-open');
+      if (forceState === true || (forceState === undefined && isOpen)) {
+        detailsSidebar.classList.remove('mobile-open');
+        if (backdrop) backdrop.classList.remove('active');
+      } else {
+        detailsSidebar.classList.add('mobile-open');
+        if (backdrop) backdrop.classList.add('active');
+      }
+      return;
+    }
 
     this.isDetailsCollapsed = (forceState !== undefined) ? forceState : !this.isDetailsCollapsed;
 
@@ -4170,6 +4250,84 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     }
 
     setTimeout(() => this.drawBracelet(), 260);
+  }
+
+  bindMobileEvents() {
+    const backdrop = document.getElementById('mobile-drawer-backdrop');
+    const paletteSidebar = document.getElementById('palette-sidebar');
+    const detailsSidebar = document.getElementById('details-sidebar');
+    const btnMobileStones = document.getElementById('btn-mobile-open-stones');
+    const btnMobileInspector = document.getElementById('btn-mobile-open-inspector');
+    const btnMobileUndo = document.getElementById('btn-mobile-undo');
+    const btnMobileBits = document.getElementById('btn-mobile-bits-quick');
+
+    const closeMobileDrawers = () => {
+      if (paletteSidebar) paletteSidebar.classList.remove('mobile-open');
+      if (detailsSidebar) detailsSidebar.classList.remove('mobile-open');
+      if (backdrop) backdrop.classList.remove('active');
+      if (btnMobileStones) btnMobileStones.classList.remove('active');
+      if (btnMobileInspector) btnMobileInspector.classList.remove('active');
+    };
+
+    if (backdrop) {
+      backdrop.addEventListener('click', closeMobileDrawers);
+      backdrop.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        closeMobileDrawers();
+      }, { passive: false });
+    }
+
+    if (btnMobileStones) {
+      btnMobileStones.addEventListener('click', () => {
+        const isOpen = paletteSidebar && paletteSidebar.classList.contains('mobile-open');
+        closeMobileDrawers();
+        if (!isOpen && paletteSidebar) {
+          paletteSidebar.classList.add('mobile-open');
+          if (backdrop) backdrop.classList.add('active');
+          btnMobileStones.classList.add('active');
+        }
+      });
+    }
+
+    if (btnMobileInspector) {
+      btnMobileInspector.addEventListener('click', () => {
+        const isOpen = detailsSidebar && detailsSidebar.classList.contains('mobile-open');
+        closeMobileDrawers();
+        if (!isOpen && detailsSidebar) {
+          detailsSidebar.classList.add('mobile-open');
+          if (backdrop) backdrop.classList.add('active');
+          btnMobileInspector.classList.add('active');
+        }
+      });
+    }
+
+    if (btnMobileUndo) {
+      btnMobileUndo.addEventListener('click', () => this.undo());
+    }
+
+    if (btnMobileBits) {
+      btnMobileBits.addEventListener('click', () => {
+        const sizes = [18, 20, 22, 24, 26, 28];
+        const curIdx = sizes.indexOf(this.totalBits);
+        const nextSize = sizes[(curIdx + 1) % sizes.length] || 22;
+        this.setTotalBits(nextSize);
+      });
+    }
+
+    this.closeMobileDrawers = closeMobileDrawers;
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 768) {
+        closeMobileDrawers();
+      }
+      this.drawBracelet();
+    });
+
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => {
+        this.drawBracelet();
+      }, 300);
+    });
   }
 
   toggleZenMode() {
