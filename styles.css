@@ -4178,6 +4178,238 @@ body {
   }
 }
 
+/* 6. Ultra-Compact Mobile Screens (<= 360px, down to 300px) */
+@media (max-width: 360px) {
+  :root {
+    --header-height: 48px;
+  }
+
+  /* Header */
+  .studio-header {
+    padding: 4px 6px;
+    gap: 4px;
+    height: var(--header-height, 48px);
+  }
+
+  .brand-badge .brand-logo-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .brand-text h1 {
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+  }
+
+  .view-nav-tabs {
+    gap: 1px;
+    padding: 1px;
+  }
+
+  .nav-tab-btn {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  .header-actions {
+    gap: 3px;
+  }
+
+  .header-actions .action-btn {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    min-height: 36px;
+    min-width: 34px;
+  }
+
+  /* Drawers */
+  .palette-sidebar {
+    width: 92vw !important;
+    max-width: 290px !important;
+  }
+
+  .details-sidebar {
+    width: 94vw !important;
+    max-width: 295px !important;
+  }
+
+  .stones-grid-container {
+    padding: 6px 6px 16px;
+    gap: 6px;
+  }
+
+  .stone-card {
+    padding: 6px 4px;
+  }
+
+  .stone-card .stone-title {
+    font-size: 0.72rem;
+  }
+
+  .stone-card .stone-price {
+    font-size: 0.65rem;
+  }
+
+  .active-stone-banner {
+    margin: 6px 6px 2px;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .active-stone-preview {
+    width: 26px;
+    height: 26px;
+  }
+
+  .active-stone-title-row strong {
+    font-size: 0.76rem;
+  }
+
+  .palette-mode-selector .tool-mode-btn span {
+    display: none; /* Icon-only in ultra-compact view */
+  }
+  .palette-mode-selector .tool-mode-btn {
+    padding: 6px;
+  }
+
+  /* Stage Floating Controls */
+  .stage-floating-island {
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    padding: 3px 6px;
+    gap: 4px;
+  }
+
+  .bits-group .step-btn {
+    width: 22px;
+    height: 22px;
+    font-size: 0.75rem;
+  }
+
+  .bits-group .island-value-badge {
+    font-size: 0.7rem;
+  }
+
+  #bead-size-selector .segment-btn {
+    padding: 2px 4px;
+    font-size: 0.62rem;
+  }
+
+  .canvas-floating-dock {
+    bottom: 50px;
+    padding: 3px 4px;
+    gap: 3px;
+  }
+
+  .dock-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 0.7rem;
+  }
+
+  .center-stage-pill {
+    bottom: 90px;
+    font-size: 0.62rem;
+    padding: 3px 8px;
+  }
+
+  /* Mobile Stage Bottom Action Bar */
+  .mobile-stage-bar {
+    bottom: 4px;
+    left: 4px;
+    right: 4px;
+    padding: 2px 4px;
+  }
+
+  .mobile-bar-btn {
+    min-height: 38px;
+    min-width: 44px;
+    font-size: 0.58rem;
+    padding: 4px;
+  }
+
+  .mobile-bar-btn i {
+    font-size: 0.82rem;
+  }
+
+  /* Collections View */
+  .view-page-container {
+    padding: 8px 6px 60px;
+    gap: 8px;
+  }
+
+  .collection-product-card {
+    padding: 8px 6px;
+  }
+
+  /* Settings View */
+  .config-box {
+    padding: 10px 8px;
+  }
+
+  .stone-rate-card {
+    padding: 6px 4px;
+    gap: 4px;
+  }
+
+  .stone-rate-name {
+    font-size: 0.72rem;
+  }
+
+  .stone-rate-input-wrap input {
+    width: 52px;
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+
+  .btn-reset-single-rate {
+    width: 22px;
+    height: 22px;
+    font-size: 0.65rem;
+  }
+
+  /* Auth Gate Card on 300px */
+  .auth-gate-card {
+    max-width: 280px;
+    padding: 18px 14px 16px;
+    gap: 12px;
+  }
+
+  .auth-brand-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+
+  .auth-gate-brand h2 {
+    font-size: 1.1rem;
+  }
+
+  .auth-pin-display {
+    gap: 10px;
+  }
+
+  .pin-dot {
+    width: 11px;
+    height: 11px;
+  }
+
+  .auth-numpad {
+    max-width: 220px;
+    gap: 6px;
+  }
+
+  .numpad-btn {
+    font-size: 1.1rem;
+    max-width: 52px;
+  }
+}
+
 /* ==========================================================================
    Atelier Access Security Gate & PIN Lock
    ========================================================================== */

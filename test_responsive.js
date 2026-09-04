@@ -36,6 +36,7 @@ assert(css.includes('@media (max-width: 1200px)'), '1200px breakpoint exists for
 assert(css.includes('@media (max-width: 992px)'), '992px breakpoint exists for tablets');
 assert(css.includes('@media (max-width: 768px)'), '768px breakpoint exists for mobile stage-first layout');
 assert(css.includes('@media (max-width: 480px)'), '480px breakpoint exists for extra-small phones');
+assert(css.includes('@media (max-width: 360px)'), '360px/300px breakpoint exists for ultra-compact mobile screens');
 assert(css.includes('.mobile-drawer-backdrop'), 'CSS rule for .mobile-drawer-backdrop defined');
 assert(css.includes('.palette-sidebar.mobile-open'), 'CSS rule for .palette-sidebar.mobile-open defined');
 assert(css.includes('.details-sidebar.mobile-open'), 'CSS rule for .details-sidebar.mobile-open defined');
