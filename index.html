@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuraCraft — Luxury Gemstone Bracelet Studio</title>
+  <meta name="description" content="Design custom luxury gemstone bracelets interactively. Select from 24 authentic healing crystals, customize bead count (bits), bead diameter, patterns, and export high-resolution designs with live pricing.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Luxury Navigation Bar -->
+    <header class="studio-header">
+      <div class="brand-badge">
+        <div class="brand-logo-icon">
+          <i class="fa-solid fa-gem"></i>
+        </div>
+        <div class="brand-text">
+          <h1>AuraCraft</h1>
+          <span class="tagline">Interactive Gemstone Bracelet Studio</span>
+        </div>
+      </div>
+
+      <!-- Primary 3-Screen View Navigation -->
+      <nav class="view-nav-tabs" id="view-nav-tabs">
+        <button class="nav-tab-btn active" data-view="studio" id="nav-btn-studio" title="Interactive 3D Bracelet Studio (1)">
+          <i class="fa-solid fa-palette"></i> <span>Studio</span>
+        </button>
+        <button class="nav-tab-btn" data-view="collections" id="nav-btn-collections" title="Saved Bracelet Collections Gallery (2)">
+          <i class="fa-solid fa-folder-open"></i> <span>Collections (<span id="nav-collection-count">0</span>)</span>
+        </button>
+        <button class="nav-tab-btn" data-view="settings" id="nav-btn-settings" title="Commercial Pricing & Backup Hub (3)">
+          <i class="fa-solid fa-sliders"></i> <span>Settings</span>
+        </button>
+      </nav>
+
+
+
+      <!-- Clean Header Quick Actions -->
+      <div class="header-actions">
+        <button id="btn-open-share-modal" class="action-btn" title="Share Bracelet Recipe URL (Dialog)">
+          <i class="fa-solid fa-share-nodes"></i> <span>Share</span>
+        </button>
+        <button id="btn-export-png" class="action-btn primary" title="Export High-Definition Render (Dialog)">
+          <i class="fa-solid fa-camera-retro"></i> <span>Export HD</span>
+        </button>
+        <button id="btn-header-print-specs" class="action-btn gold" title="Print Manufacturing Specification Sheet (Ctrl+P)">
+          <i class="fa-solid fa-print"></i> <span>Print Spec</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Views Container (Epic 6) -->
+    <div class="views-wrapper" id="views-wrapper">
+
+      <!-- ======================================================================
+           VIEW 1: STUDIO DESIGNER WORKSPACE (STREAMLINED LUXURY)
+           ====================================================================== -->
+      <section class="app-view studio-main active" id="view-studio">
+      
+      <!-- Left Sidebar: Dedicated Gemstone Selection Drawer -->
+      <aside class="palette-sidebar" id="palette-sidebar">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="fa-solid fa-gem"></i>
+            <h2>Gemstones</h2>
+          </div>
+          <div class="panel-header-controls">
+            <span class="badge" id="stone-count-badge">24 Stones</span>
+            <button class="panel-collapse-btn" id="btn-collapse-left-sidebar" title="Collapse Gemstone Palette (Alt+[)">
+              <i class="fa-solid fa-angles-left"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Selected Gemstone Live Banner -->
+        <div class="active-stone-banner" id="active-stone-banner">
+          <div class="active-stone-preview" id="active-stone-preview-bubble">
+            <!-- Canvas miniature generated dynamically -->
+          </div>
+          <div class="active-stone-details">
+            <div class="active-stone-title-row">
+              <strong id="active-stone-name">Citrine</strong>
+              <span class="stone-rate-pill" id="active-stone-price-tag">₹9.00</span>
+            </div>
+            <div class="active-stone-subtext" id="active-stone-subtitle">Solar Plexus • Abundance</div>
+          </div>
+        </div>
+
+        <!-- Search & Placement Tool Bar -->
+        <div class="palette-filter-bar">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="stone-search-input" placeholder="Search 24 gemstones..." autocomplete="off">
+            <button id="btn-clear-search" class="clear-search-btn" style="display: none;" title="Clear search">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- Placement Multi-Tool Selector -->
+          <div class="palette-mode-selector">
+            <div class="tool-btn-group">
+              <button class="tool-mode-btn active" data-mode="place" title="Click bead slot to place stone">
+                <i class="fa-solid fa-hand-pointer"></i> <span>Place</span>
+              </button>
+              <button class="tool-mode-btn" data-mode="fill" title="Fill entire bracelet with active stone">
+                <i class="fa-solid fa-fill-drip"></i> <span>Fill All</span>
+              </button>
+              <button class="tool-mode-btn" data-mode="alternate" title="Apply alternating pattern">
+                <i class="fa-solid fa-shuffle"></i> <span>Alternate</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scrollable Stones Grid (Full Height) -->
+        <div class="stones-grid-container clean-grid" id="stones-grid">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </aside>
+
+      <!-- Left Resizer Gutter Handle -->
+      <div class="sidebar-resizer left" id="resizer-left" title="Drag to resize Gemstone Palette">
+        <div class="resizer-line"></div>
+      </div>
+
+      <!-- Center: Interactive Bracelet Canvas Stage -->
+      <section class="stage-section clean-stage" id="stage-section">
+        
+        <!-- Sleek Floating Glassmorphic Stage Island (Bits, Size, Cord & Zen) -->
+        <div class="stage-floating-island" id="stage-island">
+          <!-- Sidebar Expand Toggles -->
+          <button class="stage-island-btn" id="btn-expand-left-sidebar" style="display: none;" title="Expand Gemstones Palette">
+            <i class="fa-solid fa-angles-right"></i> <span>Stones</span>
+          </button>
+
+          <!-- Bits Stepper -->
+          <div class="island-group bits-group" title="Adjust bead count">
+            <button class="step-btn" id="btn-decrement-bits" title="Decrease beads count">-</button>
+            <span class="island-value-badge" id="bits-count-display">22 Beads</span>
+            <input type="range" id="bits-slider" min="14" max="32" value="22" step="1" style="display: none;">
+            <button class="step-btn" id="btn-increment-bits" title="Increase beads count">+</button>
+            <span class="island-subtext" id="wrist-size-text">~18.5 cm</span>
+          </div>
+
+          <div class="island-divider"></div>
+
+          <!-- Bead Diameter Selector -->
+          <div class="island-group" id="bead-size-selector">
+            <button class="segment-btn" data-size="6">6mm</button>
+            <button class="segment-btn active" data-size="8">8mm</button>
+            <button class="segment-btn" data-size="10">10mm</button>
+            <button class="segment-btn" data-size="12">12mm</button>
+          </div>
+
+          <div class="island-divider"></div>
+
+          <!-- Cord Type Dropdown -->
+          <div class="island-group">
+            <select id="cord-type-select" class="island-select" title="Cord / String Material">
+              <option value="elastic" selected>Clear Elastic</option>
+              <option value="black-braided">Braided Silk</option>
+              <option value="copper-wire">Memory Wire</option>
+            </select>
+          </div>
+
+          <div class="island-divider"></div>
+
+          <!-- Zen Mode & Right Expand Toggle -->
+          <button class="stage-island-btn" id="btn-toggle-zen-mode" title="Toggle Clean Fullscreen Canvas (F)">
+            <i class="fa-solid fa-expand"></i> <span id="zen-btn-label">Zen Mode</span>
+          </button>
+          <button class="stage-island-btn" id="btn-expand-right-sidebar" style="display: none;" title="Expand Design Inspector">
+            <span>Inspector</span> <i class="fa-solid fa-angles-left"></i>
+          </button>
+        </div>
+
+        <!-- Interactive 3D Canvas Viewport -->
+        <div class="canvas-viewport clean-viewport" id="canvas-viewport">
+          <canvas id="bracelet-canvas" width="800" height="800"></canvas>
+          
+          <!-- Hover Bead Floating Card Tooltip -->
+          <div class="hover-bead-card" id="hover-bead-card" style="display: none;">
+            <div class="hover-card-header">
+              <div class="hover-card-icon" id="hover-stone-icon"></div>
+              <div>
+                <strong id="hover-stone-title">Citrine</strong>
+                <span class="hover-stone-chakra" id="hover-stone-chakra">Solar Plexus</span>
+              </div>
+            </div>
+            <div class="hover-card-meta">
+              <span id="hover-stone-slot">Slot #1</span>
+              <strong class="hover-price" id="hover-stone-price">₹10.00</strong>
+            </div>
+            <p class="hover-stone-desc" id="hover-stone-desc">Stone of Abundance & Manifestation</p>
+          </div>
+
+          <!-- Floating Bottom Action Dock -->
+          <div class="canvas-floating-dock">
+            <button class="dock-btn" id="btn-undo" title="Undo Placement (Ctrl+Z)">
+              <i class="fa-solid fa-arrow-rotate-left"></i>
+            </button>
+            <button class="dock-btn" id="btn-redo" title="Redo Placement (Ctrl+Y)">
+              <i class="fa-solid fa-arrow-rotate-right"></i>
+            </button>
+            <button class="dock-btn" id="btn-symmetry-mirror" title="Mirror Symmetry">
+              <i class="fa-solid fa-arrows-split-up-and-left"></i>
+            </button>
+            <div class="dock-divider"></div>
+            <button class="dock-btn" id="btn-randomize" title="Generate Harmonious Blend">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </button>
+            <button class="dock-btn" id="btn-toggle-labels" title="Toggle Bead Numbers">
+              <i class="fa-solid fa-hashtag"></i>
+            </button>
+            <button class="dock-btn" id="btn-toggle-glow" title="Toggle Gem Refraction Glow">
+              <i class="fa-solid fa-sun"></i>
+            </button>
+            <div class="dock-divider"></div>
+            <button class="dock-btn danger" id="btn-clear-all" title="Reset / Clear Bracelet">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+
+          <!-- Center Stage Status Text -->
+          <div class="center-stage-pill" id="center-stage-pill">
+            <span class="pill-dot"></span>
+            <span id="stage-status-text">Click bead slot to place active stone • Drag stones to swap</span>
+          </div>
+        </div>
+
+        <!-- Collapsible Sequence Ribbon Strip -->
+        <div class="sequence-ribbon-container compact-ribbon">
+          <div class="ribbon-header">
+            <div class="ribbon-title">
+              <i class="fa-solid fa-ellipsis"></i>
+              <span>Strand Order</span>
+            </div>
+            <div class="ribbon-actions">
+              <button id="btn-shift-left" class="mini-btn" title="Shift strand left"><i class="fa-solid fa-chevron-left"></i></button>
+              <button id="btn-shift-right" class="mini-btn" title="Shift strand right"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
+          <div class="sequence-ribbon" id="sequence-ribbon">
+            <!-- Populated dynamically with bead mini-thumbnails -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Resizer Gutter Handle -->
+      <div class="sidebar-resizer right" id="resizer-right" title="Drag to resize Design Inspector">
+        <div class="resizer-line"></div>
+      </div>
+
+      <!-- Right Sidebar: Clean Design & Commercial Inspector -->
+      <aside class="details-sidebar clean-details" id="details-sidebar">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="fa-solid fa-sliders"></i>
+            <h2>Design Inspector</h2>
+          </div>
+          <div class="panel-header-controls">
+            <button class="panel-collapse-btn" id="btn-collapse-right-sidebar" title="Collapse Details Sidebar (Alt+])">
+              <i class="fa-solid fa-angles-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sidebar Subtabs (Combined into 2 Clean Tabs) -->
+        <div class="sidebar-subtabs" id="details-subtabs">
+          <button class="subtab-btn active" data-subtab="details-metadata" id="subtab-btn-metadata">
+            <i class="fa-solid fa-tag"></i> Product & SKU
+          </button>
+          <button class="subtab-btn" data-subtab="details-bom" id="subtab-btn-bom">
+            <i class="fa-solid fa-receipt"></i> BOM & Rates
+          </button>
+        </div>
+
+        <!-- Subtab Pane 1: Product & SKU Metadata -->
+        <div class="subtab-pane active" id="pane-details-metadata">
+          
+          <!-- Card 1: Product Identity -->
+          <div class="panel-box product-meta-card" id="sidebar-product-card">
+            <div class="panel-box-header">
+              <i class="fa-solid fa-barcode"></i>
+              <h3>Product Identity</h3>
+              <span class="status-badge active" id="product-status-badge">Active</span>
+            </div>
+            <div class="product-meta-body">
+              <!-- Product Title -->
+              <div class="meta-field">
+                <label>Product Title</label>
+                <div class="title-input-wrapper">
+                  <input type="text" id="product-title-input" value="Solar Abundance & Manifestation Bracelet" placeholder="Enter title...">
+                  <button class="title-wand-btn" id="btn-auto-title" title="Auto-generate title based on stones">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- SKU Code -->
+              <div class="meta-field">
+                <label>SKU Code</label>
+                <div class="sku-badge-row">
+                  <div class="sku-badge" id="product-sku-badge">AC-CIT-AME-22B-8MM-001</div>
+                  <button class="copy-sku-btn" id="btn-copy-sku" title="Copy SKU to clipboard">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Category & Lifecycle Status -->
+              <div class="meta-inline-grid">
+                <div class="meta-field">
+                  <label>Category</label>
+                  <select id="product-category-select">
+                    <option value="wealth" selected>Wealth & Abundance</option>
+                    <option value="protection">Protection & Shield</option>
+                    <option value="love">Heart & Love</option>
+                    <option value="chakra">7-Chakra Balance</option>
+                    <option value="clarity">Mind Clarity</option>
+                    <option value="royal">Royal Luxury</option>
+                    <option value="custom">Custom Bespoke</option>
+                  </select>
+                </div>
+                <div class="meta-field">
+                  <label>Status</label>
+                  <select id="product-status-select">
+                    <option value="active" selected>Active Product</option>
+                    <option value="draft">Draft Design</option>
+                    <option value="sample">Showroom Sample</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Primary Gold Save Button -->
+              <button class="action-btn gold full-width" id="btn-save-to-collection" style="margin-top: 14px; width: 100%; justify-content: center;">
+                <i class="fa-solid fa-bookmark"></i> <span>Save to Collection (Ctrl+S)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subtab Pane 2: Combined BOM & Cost Waterfall Breakdown -->
+        <div class="subtab-pane" id="pane-details-bom" style="display: none;">
+          
+          <!-- Box 1: Bill of Materials -->
+          <div class="panel-box" style="margin-bottom: 12px;">
+            <div class="panel-box-header">
+              <i class="fa-solid fa-list-check"></i>
+              <h3>Bill of Materials</h3>
+              <span class="mini-count" id="bom-total-bits">22 Beads</span>
+            </div>
+            <div class="bom-list" id="bom-list">
+              <!-- Populated via JS -->
+            </div>
+            <div class="bom-footer">
+              <div class="bom-specs">
+                <span>Cord: <strong id="bom-cord-text">Clear Elastic</strong></span>
+                <span>Fit: <strong id="bom-size-text">8mm (~18.5 cm)</strong></span>
+              </div>
+              <button class="action-btn full-width" id="btn-sidebar-copy-recipe" style="margin-top: 8px; width: 100%; justify-content: center;">
+                <i class="fa-solid fa-copy"></i> Copy Recipe Data
+              </button>
+            </div>
+          </div>
+
+          <!-- Box 2: 5-Tier Cost Waterfall Breakdown -->
+          <div class="panel-box waterfall-sidebar-box">
+            <div class="panel-box-header">
+              <i class="fa-solid fa-calculator"></i>
+              <h3>Cost Waterfall Breakdown</h3>
+              <span class="badge gold" id="sidebar-waterfall-price">₹742.00</span>
+            </div>
+
+            <div class="sidebar-waterfall-scroll">
+              <!-- Tier 1: Raw Gems -->
+              <div class="tier-card sidebar-tier">
+                <div class="tier-card-header">
+                  <div class="tier-name"><span class="tier-step">1</span> <strong>Raw Gemstones</strong></div>
+                  <span class="tier-amount" id="sidebar-tier-gems-total">₹220.00</span>
+                </div>
+                <table class="tier-item-table compact">
+                  <thead><tr><th>Stone</th><th>Rate</th><th>Qty</th><th>Subtotal</th></tr></thead>
+                  <tbody id="sidebar-tier-gems-tbody"></tbody>
+                </table>
+              </div>
+
+              <!-- Tier 2: Packaging -->
+              <div class="tier-card sidebar-tier">
+                <div class="tier-card-header">
+                  <div class="tier-name"><span class="tier-step">2</span> <strong>Packaging & Presentation</strong></div>
+                  <span class="tier-amount" id="sidebar-tier-pkg-total">₹50.00</span>
+                </div>
+                <table class="tier-item-table compact">
+                  <tbody>
+                    <tr><td>Authenticity Certificate</td><td id="sidebar-pkg-cert-val">₹5.00</td></tr>
+                    <tr><td>Eco Jute / Satin Gift Bag</td><td id="sidebar-pkg-bag-val">₹15.00</td></tr>
+                    <tr><td>Cord & Tension Crimp</td><td id="sidebar-pkg-cord-val">₹10.00</td></tr>
+                    <tr><td>Velvet Lined Printed Box</td><td id="sidebar-pkg-box-val">₹20.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Tier 3: Logistics -->
+              <div class="tier-card sidebar-tier">
+                <div class="tier-card-header">
+                  <div class="tier-name"><span class="tier-step">3</span> <strong>Logistics & Delivery</strong></div>
+                  <span class="tier-amount" id="sidebar-tier-log-total">₹57.00</span>
+                </div>
+                <table class="tier-item-table compact">
+                  <tbody>
+                    <tr><td>Insured Express Shipment</td><td id="sidebar-log-ship-val">₹45.00</td></tr>
+                    <tr><td>Security Hologram / Sticker</td><td id="sidebar-log-stick-val">₹2.00</td></tr>
+                    <tr><td>Waterproof Courier Bag</td><td id="sidebar-log-bag-val">₹10.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Tier 4: Overheads -->
+              <div class="tier-card sidebar-tier">
+                <div class="tier-card-header">
+                  <div class="tier-name"><span class="tier-step">4</span> <strong>Operating Overheads & Reserves</strong></div>
+                  <span class="tier-amount" id="sidebar-tier-ovh-total">₹174.90</span>
+                </div>
+                <table class="tier-item-table compact">
+                  <tbody>
+                    <tr><td>Return & Transit Damage Reserve</td><td id="sidebar-ovh-dam-val">₹50.00</td></tr>
+                    <tr><td>Marketing & Platform Operations</td><td id="sidebar-ovh-mkt-val">₹50.00</td></tr>
+                    <tr><td>Dynamic 10% Promo Allowance</td><td id="sidebar-ovh-disc-val" class="text-gold">₹74.90</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Tier 5: Target Profit Margin -->
+              <div class="tier-card sidebar-tier highlight">
+                <div class="tier-card-header">
+                  <div class="tier-name"><span class="tier-step">5</span> <strong>Profit Margin & Retail Anchor</strong></div>
+                  <span class="tier-amount text-green" id="sidebar-tier-profit-val">₹200.00</span>
+                </div>
+                <table class="tier-item-table compact">
+                  <tbody>
+                    <tr><td>Target Profit Margin</td><td id="sidebar-profit-row" class="text-green">₹200.00</td></tr>
+                    <tr><td>Final Selling Price</td><td id="sidebar-final-selling-row" class="text-gold">₹742.00</td></tr>
+                    <tr><td>Recommended Retail MRP</td><td id="sidebar-final-mrp-row">₹749.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section> <!-- /view-studio -->
+
+    <!-- ======================================================================
+         VIEW 2: SAVED COLLECTIONS GALLERY (Screen 2)
+         ====================================================================== -->
+    <section class="app-view" id="view-collections" style="display: none;">
+      <div class="view-page-container">
+        <div class="view-page-header">
+          <div class="view-header-title">
+            <i class="fa-solid fa-folder-open"></i>
+            <div>
+              <h2>Saved Bracelet Collections Gallery</h2>
+              <p>Your local portfolio of bespoke creations, sample editions, and custom orders</p>
+            </div>
+          </div>
+          <div class="view-header-actions">
+            <button class="action-btn" id="btn-full-col-save-current">
+              <i class="fa-solid fa-bookmark"></i> <span>Save Current Design</span>
+            </button>
+            <button class="action-btn primary" id="btn-full-col-new-design">
+              <i class="fa-solid fa-plus"></i> <span>Return to Studio</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Gallery Toolbar -->
+        <div class="collection-toolbar fullpage">
+          <div class="collection-search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="full-col-search-input" placeholder="Search by title, SKU code, or stone names (e.g. AC-CIT, Ruby, Solar)...">
+            <button id="btn-full-col-clear-search" class="clear-search-btn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="collection-filter-row">
+            <div class="collection-cat-pills" id="full-col-cat-pills">
+              <button class="col-pill active" data-cat="all">All Designs</button>
+              <button class="col-pill" data-cat="wealth">Wealth</button>
+              <button class="col-pill" data-cat="protection">Protection</button>
+              <button class="col-pill" data-cat="love">Love</button>
+              <button class="col-pill" data-cat="chakra">Chakras</button>
+              <button class="col-pill" data-cat="clarity">Clarity</button>
+              <button class="col-pill" data-cat="royal">Royal</button>
+              <button class="col-pill" data-cat="custom">Custom</button>
+            </div>
+            <select class="collection-status-filter" id="full-col-status-filter">
+              <option value="all">All Statuses</option>
+              <option value="active">Active Products</option>
+              <option value="draft">Drafts</option>
+              <option value="sample">Samples</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Fullscreen Collections Grid -->
+        <div class="collection-grid fullpage-grid" id="full-col-grid">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 3: SETTINGS & COST CONFIGURATOR (Screen 3)
+         ====================================================================== -->
+    <section class="app-view" id="view-settings" style="display: none;">
+      <div class="view-page-container">
+        <!-- Settings Header with Subtabs and Actions integrated in one clean row -->
+        <div class="view-page-header settings-main-header">
+          <div class="view-header-title">
+            <i class="fa-solid fa-sliders"></i>
+            <div>
+              <h2>Settings & Atelier Configurator</h2>
+              <p>Dynamic commercial pricing engine, cost parameters, and collection backup / restore</p>
+            </div>
+          </div>
+          <div class="view-header-actions">
+            <div class="settings-subtabs" id="settings-subtabs">
+              <button class="settings-subtab-btn active" data-tab="pricing" id="btn-settings-tab-pricing">
+                <i class="fa-solid fa-calculator"></i> <span>Pricing & Costs</span>
+              </button>
+              <button class="settings-subtab-btn" data-tab="backup" id="btn-settings-tab-backup">
+                <i class="fa-solid fa-database"></i> <span>Backup & Restore</span>
+              </button>
+            </div>
+            <button class="action-btn" id="btn-pricing-reset-defaults" title="Reset factory CSV rates">
+              <i class="fa-solid fa-rotate-left"></i> <span>Reset CSV</span>
+            </button>
+            <button class="action-btn primary" id="btn-pricing-save-config">
+              <i class="fa-solid fa-floppy-disk"></i> <span>Save Config</span>
+            </button>
+            <button class="action-btn gold" id="btn-settings-return-studio">
+              <i class="fa-solid fa-palette"></i> <span>Studio</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pane 1: Pricing & Cost Configurator -->
+        <div class="settings-pane" id="pane-settings-pricing">
+          <!-- 2-Column Balanced Settings Grid -->
+          <div class="pricing-fullpage-grid">
+            <!-- Left Column: Factory Cost Parameters -->
+            <div class="pricing-col">
+              <div class="pricing-card-pane">
+                <div class="pane-heading">
+                  <i class="fa-solid fa-sliders"></i>
+                  <h3>1. Commercial Cost Parameters & Formulas</h3>
+                </div>
+
+                <div class="config-sections-grid">
+                  <!-- Packaging Group -->
+                  <div class="config-box">
+                    <h4><i class="fa-solid fa-box-open"></i> Packaging Materials (₹)</h4>
+                    <div class="config-inputs-grid">
+                      <div class="input-group"><label>Certificate:</label><input type="number" step="0.5" id="full-cfg-pkg-cert" value="5.00"></div>
+                      <div class="input-group"><label>Gift Bag:</label><input type="number" step="0.5" id="full-cfg-pkg-bag" value="15.00"></div>
+                      <div class="input-group"><label>Cord / Elastic:</label><input type="number" step="0.5" id="full-cfg-pkg-elastic" value="10.00"></div>
+                      <div class="input-group"><label>Printed Box:</label><input type="number" step="0.5" id="full-cfg-pkg-box" value="20.00"></div>
+                    </div>
+                  </div>
+
+                  <!-- Logistics Group -->
+                  <div class="config-box">
+                    <h4><i class="fa-solid fa-truck-fast"></i> Logistics & Delivery (₹)</h4>
+                    <div class="config-inputs-grid">
+                      <div class="input-group"><label>Shipment:</label><input type="number" step="0.5" id="full-cfg-log-ship" value="45.00"></div>
+                      <div class="input-group"><label>Security Sticker:</label><input type="number" step="0.5" id="full-cfg-log-sticker" value="2.00"></div>
+                      <div class="input-group"><label>Shipment Bag:</label><input type="number" step="0.5" id="full-cfg-log-bag" value="10.00"></div>
+                    </div>
+                  </div>
+
+                  <!-- Overheads & Dynamic Discount -->
+                  <div class="config-box">
+                    <h4><i class="fa-solid fa-percent"></i> Overheads & Promo Reserve</h4>
+                    <div class="config-inputs-grid">
+                      <div class="input-group"><label>Damage/Return (₹):</label><input type="number" step="1" id="full-cfg-ovh-damage" value="50.00"></div>
+                      <div class="input-group"><label>Marketing Base (₹):</label><input type="number" step="1" id="full-cfg-ovh-marketing" value="50.00"></div>
+                      <div class="input-group full-width"><label>Discount Allowance Rate (% of MRP):</label><input type="number" step="0.01" min="0" max="0.9" id="full-cfg-ovh-discount-pct" value="0.10"></div>
+                    </div>
+                  </div>
+
+                  <!-- Profit Margin -->
+                  <div class="config-box">
+                    <h4><i class="fa-solid fa-coins"></i> Margin & Anchor Rule</h4>
+                    <div class="config-inputs-grid">
+                      <div class="input-group"><label>Target Profit (₹):</label><input type="number" step="5" id="full-cfg-margin-profit" value="200.00"></div>
+                      <div class="input-group"><label>MRP Rounding Mode:</label><select id="full-cfg-margin-anchor"><option value="49_99" selected>Anchor xx49 / xx99</option><option value="99_only">Anchor xx99 only</option><option value="round_10">Nearest 10</option><option value="exact">Exact (No round)</option></select></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Enhanced Stone Unit Rates Custom Overrides Matrix -->
+            <div class="pricing-col">
+              <div class="pricing-card-pane">
+                <div class="pane-heading" style="justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-gem"></i>
+                    <h3>2. Stone Unit Rates Custom Overrides (₹ / Bead)</h3>
+                  </div>
+                  <button class="mini-btn gold" id="btn-reset-all-stone-rates" title="Reset all stone rate overrides back to CSV base rates">
+                    <i class="fa-solid fa-rotate-left"></i> Reset All Rates
+                  </button>
+                </div>
+
+                <!-- Stone Rates Search Toolbar -->
+                <div class="rates-filter-toolbar">
+                  <div class="rates-search-box" style="width: 100%;">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="full-stone-rates-search" placeholder="Search 24 gemstones by name or chakra...">
+                  </div>
+                </div>
+
+                <!-- 24 Stone Unit Rates Scroll Grid -->
+                <div class="enhanced-stone-rates-grid" id="full-stone-rates-grid">
+                  <!-- Populated dynamically via JS with stone previews, base rates, inputs & reset buttons -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pane 2: Backup & Restore Hub -->
+        <div class="settings-pane" id="pane-settings-backup" style="display: none;">
+          <div class="share-backup-hub-grid">
+            <!-- Left Column: JSON Backup Export -->
+            <div class="hub-card">
+              <div class="hub-card-header">
+                <i class="fa-solid fa-cloud-arrow-down"></i>
+                <h3>1. Collection Backup Export</h3>
+              </div>
+              <div class="hub-card-body">
+                <p class="hub-desc">Download complete JSON snapshots of your design portfolio, pricing rules, and stone rates. Safe, offline, and portable.</p>
+                <div class="backup-export-cards-grid" style="margin-bottom: 16px;">
+                  <div class="backup-option-card">
+                    <i class="fa-solid fa-database backup-card-icon"></i>
+                    <div class="backup-card-info">
+                      <h4>Full Collection Backup</h4>
+                      <p>Download complete JSON containing all saved designs, custom pricing configuration, and stone rates.</p>
+                    </div>
+                    <button class="action-btn gold" id="btn-full-export-all-json"><i class="fa-solid fa-download"></i> Download Full Backup</button>
+                  </div>
+                  <div class="backup-option-card">
+                    <i class="fa-solid fa-file-code backup-card-icon"></i>
+                    <div class="backup-card-info">
+                      <h4>Active Design Recipe</h4>
+                      <p>Export currently active bracelet as a standalone single product JSON file.</p>
+                    </div>
+                    <button class="action-btn" id="btn-full-export-single-json"><i class="fa-solid fa-file-export"></i> Export Active Design</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: JSON Restore Engine -->
+            <div class="hub-card">
+              <div class="hub-card-header">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <h3>2. JSON Restore Engine</h3>
+              </div>
+              <div class="hub-card-body">
+                <!-- Restore Dropzone -->
+                <div class="import-dropzone" id="full-import-dropzone">
+                  <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+                  <h4>Drag & Drop AuraCraft Backup JSON File</h4>
+                  <p>or click to browse file from your computer</p>
+                  <input type="file" id="full-backup-file-input" accept=".json,application/json" style="display: none;">
+                  <button class="action-btn" id="btn-full-browse-backup" type="button" style="margin-top: 8px;"><i class="fa-solid fa-folder-open"></i> Choose JSON File</button>
+                </div>
+
+                <!-- Staged Restore Options -->
+                <div id="full-import-staged-area" style="display: none; margin-top: 14px;">
+                  <div class="import-file-badge">
+                    <i class="fa-solid fa-file-lines"></i>
+                    <span id="full-import-filename">backup.json</span>
+                    <span class="badge" id="full-import-item-count">0 Products Found</span>
+                  </div>
+                  <div class="import-modes-grid" style="margin-top: 8px;">
+                    <label class="import-mode-label">
+                      <input type="radio" name="full-import-mode" value="merge" checked>
+                      <div>
+                        <strong>Merge & Deduplicate (Recommended)</strong>
+                        <small>Adds new designs and updates existing items.</small>
+                      </div>
+                    </label>
+                    <label class="import-mode-label">
+                      <input type="radio" name="full-import-mode" value="replace">
+                      <div>
+                        <strong>Replace Entire Collection</strong>
+                        <small>Clears local collection and replaces with backup.</small>
+                      </div>
+                    </label>
+                  </div>
+                  <button class="action-btn primary full-width" id="btn-full-execute-restore" style="margin-top: 10px; width: 100%; justify-content: center;">
+                    <i class="fa-solid fa-check"></i> Execute Restore Now
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div> <!-- /views-wrapper -->
+
+    <!-- Modal: Dynamic Multi-Tier Pricing Inspector & Configurator (Epic 1) -->
+    <div class="modal-backdrop" id="pricing-modal" style="display: none;">
+      <div class="modal-card wide">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i class="fa-solid fa-calculator"></i>
+            <h3>Dynamic Pricing Inspector & Cost Configurator</h3>
+          </div>
+          <div class="modal-tab-header">
+            <button class="modal-tab-btn active" id="tab-btn-pricing-breakdown" data-tab="breakdown">
+              <i class="fa-solid fa-list-ol"></i> Cost Breakdown
+            </button>
+            <button class="modal-tab-btn" id="tab-btn-pricing-config" data-tab="config">
+              <i class="fa-solid fa-sliders"></i> Edit Cost Parameters
+            </button>
+          </div>
+          <button class="close-modal-btn" id="btn-close-pricing-modal"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Tab 1: Cost Breakdown Waterfall -->
+          <div class="tab-pane active" id="pricing-pane-breakdown">
+            <!-- Top Summary Banner -->
+            <div class="pricing-summary-banner">
+              <div class="sum-box highlight">
+                <span class="sum-label">Final Selling Price</span>
+                <strong class="sum-val" id="modal-selling-price">₹742.00</strong>
+                <span class="sum-sub" id="modal-selling-sub">Landed Cost + Profit Margin</span>
+              </div>
+              <div class="sum-box">
+                <span class="sum-label">Recommended MRP</span>
+                <strong class="sum-val" id="modal-mrp-price">₹749.00</strong>
+                <span class="sum-sub" id="modal-mrp-sub">Anchor (Save ₹75 on 10% promo)</span>
+              </div>
+              <div class="sum-box">
+                <span class="sum-label">Target Profit</span>
+                <strong class="sum-val text-green" id="modal-profit-val">₹200.00</strong>
+                <span class="sum-sub">Net Margin</span>
+              </div>
+            </div>
+
+            <!-- Cost Tiers Waterfall Accordion / Table -->
+            <div class="pricing-tiers-grid">
+              <!-- Tier 1: Raw Gems -->
+              <div class="tier-card">
+                <div class="tier-card-header">
+                  <div class="tier-name">
+                    <span class="tier-step">1</span>
+                    <strong>Raw Gemstones Cost</strong>
+                  </div>
+                  <span class="tier-amount" id="tier-gems-total">₹220.00</span>
+                </div>
+                <div class="tier-table-wrapper">
+                  <table class="tier-item-table">
+                    <thead>
+                      <tr><th>Stone</th><th>Rate</th><th>Qty</th><th>Subtotal</th></tr>
+                    </thead>
+                    <tbody id="tier-gems-tbody">
+                      <!-- Populated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Tier 2: Packaging & Materials -->
+              <div class="tier-card">
+                <div class="tier-card-header">
+                  <div class="tier-name">
+                    <span class="tier-step">2</span>
+                    <strong>Packaging & Materials</strong>
+                  </div>
+                  <span class="tier-amount" id="tier-pkg-total">₹50.00</span>
+                </div>
+                <div class="tier-rows-list" id="tier-pkg-list">
+                  <div class="tier-row"><span>Certificate of Authenticity</span><strong id="val-pkg-cert">₹5.00</strong></div>
+                  <div class="tier-row"><span>Gift / Jute Bag</span><strong id="val-pkg-bag">₹15.00</strong></div>
+                  <div class="tier-row"><span>High-Tensile Cord / Elastic</span><strong id="val-pkg-string">₹10.00</strong></div>
+                  <div class="tier-row"><span>Branded Rigid Box with Printing</span><strong id="val-pkg-box">₹20.00</strong></div>
+                </div>
+              </div>
+
+              <!-- Tier 3: Logistics & Shipment -->
+              <div class="tier-card">
+                <div class="tier-card-header">
+                  <div class="tier-name">
+                    <span class="tier-step">3</span>
+                    <strong>Logistics & Courier Delivery</strong>
+                  </div>
+                  <span class="tier-amount" id="tier-ship-total">₹57.00</span>
+                </div>
+                <div class="tier-rows-list">
+                  <div class="tier-row"><span>Courier Shipment Cost</span><strong id="val-ship-rate">₹45.00</strong></div>
+                  <div class="tier-row"><span>Security Label / Sticker</span><strong id="val-ship-sticker">₹2.00</strong></div>
+                  <div class="tier-row"><span>Tamper-Proof Courier Bag</span><strong id="val-ship-bag">₹10.00</strong></div>
+                </div>
+              </div>
+
+              <!-- Tier 4: Operating Overheads & Margin -->
+              <div class="tier-card">
+                <div class="tier-card-header">
+                  <div class="tier-name">
+                    <span class="tier-step">4</span>
+                    <strong>Operating Overheads & Margin</strong>
+                  </div>
+                  <span class="tier-amount" id="tier-ovh-total">₹374.90</span>
+                </div>
+                <div class="tier-rows-list">
+                  <div class="tier-row"><span>Return & Damage Reserve</span><strong id="val-ovh-damage">₹50.00</strong></div>
+                  <div class="tier-row"><span>Customer Acquisition / Marketing</span><strong id="val-ovh-marketing">₹50.00</strong></div>
+                  <div class="tier-row"><span>Dynamic 10% Discount Reserve (10% of MRP)</span><strong class="text-gold" id="val-ovh-discount">₹74.90</strong></div>
+                  <div class="tier-row highlight"><span>Target Profit Margin</span><strong class="text-green" id="val-ovh-profit">₹200.00</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Edit Cost Parameters (100% Configurable Settings) -->
+          <div class="tab-pane" id="pricing-pane-config" style="display: none;">
+            <div class="config-instructions">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>All cost values below are fully customizable and automatically saved in your local browser storage.</span>
+            </div>
+
+            <div class="config-sections-grid">
+              <!-- Section A: Packaging Costs -->
+              <div class="config-box">
+                <h4><i class="fa-solid fa-box-open"></i> Packaging & Materials (₹)</h4>
+                <div class="config-inputs-grid">
+                  <div class="input-group">
+                    <label>Certificate</label>
+                    <input type="number" step="0.5" id="cfg-pkg-cert" value="5">
+                  </div>
+                  <div class="input-group">
+                    <label>Jute / Gift Bag</label>
+                    <input type="number" step="0.5" id="cfg-pkg-bag" value="15">
+                  </div>
+                  <div class="input-group">
+                    <label>Cord / Elastic</label>
+                    <input type="number" step="0.5" id="cfg-pkg-string" value="10">
+                  </div>
+                  <div class="input-group">
+                    <label>Box with Printing</label>
+                    <input type="number" step="0.5" id="cfg-pkg-box" value="20">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section B: Logistics Costs -->
+              <div class="config-box">
+                <h4><i class="fa-solid fa-truck-fast"></i> Logistics & Delivery (₹)</h4>
+                <div class="config-inputs-grid">
+                  <div class="input-group">
+                    <label>Courier Shipment</label>
+                    <input type="number" step="1" id="cfg-ship-rate" value="45">
+                  </div>
+                  <div class="input-group">
+                    <label>Security Sticker</label>
+                    <input type="number" step="0.5" id="cfg-ship-sticker" value="2">
+                  </div>
+                  <div class="input-group">
+                    <label>Shipment Bag</label>
+                    <input type="number" step="0.5" id="cfg-ship-bag" value="10">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section C: Overheads & Margins -->
+              <div class="config-box">
+                <h4><i class="fa-solid fa-chart-line"></i> Overheads & Profit Margins</h4>
+                <div class="config-inputs-grid">
+                  <div class="input-group">
+                    <label>Return/Damage (₹)</label>
+                    <input type="number" step="5" id="cfg-ovh-damage" value="50">
+                  </div>
+                  <div class="input-group">
+                    <label>Marketing Base (₹)</label>
+                    <input type="number" step="5" id="cfg-ovh-marketing" value="50">
+                  </div>
+                  <div class="input-group">
+                    <label>Discount Rate (% of MRP)</label>
+                    <input type="number" min="0" max="50" step="1" id="cfg-ovh-discount-pct" value="10">
+                  </div>
+                  <div class="input-group">
+                    <label>Target Profit (₹)</label>
+                    <input type="number" step="10" id="cfg-target-profit" value="200">
+                  </div>
+                  <div class="input-group full-width">
+                    <label>MRP Anchor Rounding</label>
+                    <select id="cfg-mrp-anchor">
+                      <option value="49_99" selected>Nearest ending in 49 or 99 (e.g. ₹749, ₹799)</option>
+                      <option value="nearest_50">Nearest 50 (e.g. ₹750, ₹800)</option>
+                      <option value="nearest_10">Nearest 10 (e.g. ₹740, ₹750)</option>
+                      <option value="exact">Exact (No rounding)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section D: Stone Unit Rates Overrides -->
+              <div class="config-box full-width">
+                <h4><i class="fa-solid fa-gem"></i> Stone Unit Rates (₹ per Bead)</h4>
+                <div class="stone-rates-scroll-grid" id="config-stone-rates-grid">
+                  <!-- Populated dynamically with all 24 stones -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="action-btn danger" id="btn-reset-pricing-defaults">
+            <i class="fa-solid fa-rotate-left"></i> Reset to CSV Defaults
+          </button>
+          <button class="action-btn" id="btn-cancel-pricing-modal">Close</button>
+          <button class="action-btn primary" id="btn-save-pricing-config">
+            <i class="fa-solid fa-floppy-disk"></i> Save & Apply Config
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: HD Export Preview & Download -->
+    <div class="modal-backdrop" id="export-modal" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i class="fa-solid fa-camera"></i>
+            <h3>High-Definition Studio Render</h3>
+          </div>
+          <button class="close-modal-btn" id="btn-close-export-modal"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="export-preview-box">
+            <img id="export-preview-img" src="" alt="Custom Gemstone Bracelet Design">
+          </div>
+          <div class="export-options">
+            <label>Select Background Style:</label>
+            <div class="segmented-control" id="export-bg-options">
+              <button class="segment-btn active" data-bg="dark">Velvet Dark Studio</button>
+              <button class="segment-btn" data-bg="light">Luxury Marble Light</button>
+              <button class="segment-btn" data-bg="transparent">Transparent PNG</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn" id="btn-cancel-export">Cancel</button>
+          <button class="action-btn primary" id="btn-download-image">
+            <i class="fa-solid fa-download"></i> Download High-Res PNG (1600x1600)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Order Summary / Specs Sheet -->
+    <div class="modal-backdrop" id="summary-modal" style="display: none;">
+      <div class="modal-card wide">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i class="fa-solid fa-receipt"></i>
+            <h3>Custom Bracelet Specification Sheet</h3>
+          </div>
+          <button class="close-modal-btn" id="btn-close-summary-modal"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="summary-grid">
+            <div class="summary-left">
+              <div class="summary-preview-thumb">
+                <canvas id="summary-mini-canvas" width="300" height="300"></canvas>
+              </div>
+              <div class="summary-highlight-card">
+                <h4>Energy Signature</h4>
+                <p id="summary-energy-summary">Harmonized blend of Fire and Earth stones promoting solar confidence, spiritual protection, and abundance.</p>
+              </div>
+            </div>
+            <div class="summary-right">
+              <h4>Stone Composition & Quantities</h4>
+              <div class="summary-table-wrapper">
+                <table class="specs-table" id="specs-table">
+                  <thead>
+                    <tr>
+                      <th>Stone</th>
+                      <th>Chakra</th>
+                      <th>Unit Rate</th>
+                      <th>Count</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody id="specs-table-body">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+              <div class="summary-specs-list">
+                <div class="spec-row">
+                  <span>Product Title:</span>
+                  <strong id="modal-product-title">Solar Abundance & Manifestation Bracelet</strong>
+                </div>
+                <div class="spec-row">
+                  <span>Product SKU:</span>
+                  <strong class="text-gold" id="modal-product-sku">AC-CIT-AME-22B-8MM-001</strong>
+                </div>
+                <div class="spec-row">
+                  <span>Total Beads (Bits):</span>
+                  <strong id="modal-total-bits">22 Beads</strong>
+                </div>
+                <div class="spec-row">
+                  <span>Bead Diameter:</span>
+                  <strong id="modal-bead-size">8 mm</strong>
+                </div>
+                <div class="spec-row">
+                  <span>Cord Material:</span>
+                  <strong id="modal-cord-type">Elastic Stretch Thread</strong>
+                </div>
+                <div class="spec-row">
+                  <span>Selling Price:</span>
+                  <strong class="text-gold" id="modal-summary-selling-price">₹742.00</strong>
+                </div>
+                <div class="spec-row">
+                  <span>Recommended MRP:</span>
+                  <strong id="modal-summary-mrp">₹749.00</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn" id="btn-copy-recipe"><i class="fa-solid fa-copy"></i> Copy Recipe Data</button>
+          <button class="action-btn gold" id="btn-print-specs"><i class="fa-solid fa-print"></i> Print / Save</button>
+          <button class="action-btn primary" id="btn-finish-modal">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Collections Gallery Modal (Epic 3) -->
+    <div class="modal-backdrop" id="collections-modal" style="display: none;">
+      <div class="modal-card wide collections-modal-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i class="fa-solid fa-folder-open"></i>
+            <h3>My Saved Bracelet Collections</h3>
+            <span class="badge" id="modal-collection-count-badge">0 Designs</span>
+          </div>
+          <button class="close-modal-btn" id="btn-close-collections-modal"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Gallery Toolbar: Search, Category Filter Pills & Status Dropdown -->
+        <div class="collection-toolbar">
+          <div class="collection-search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="collection-search-input" placeholder="Search by title, SKU, or gemstone...">
+            <button class="clear-search-btn" id="btn-clear-collection-search" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div class="collection-filter-row">
+            <div class="collection-cat-pills" id="collection-cat-pills">
+              <button class="col-pill active" data-cat="all">All Designs</button>
+              <button class="col-pill" data-cat="wealth">Wealth</button>
+              <button class="col-pill" data-cat="protection">Protection</button>
+              <button class="col-pill" data-cat="love">Love</button>
+              <button class="col-pill" data-cat="chakra">Chakra</button>
+              <button class="col-pill" data-cat="clarity">Clarity</button>
+              <button class="col-pill" data-cat="royal">Royal</button>
+              <button class="col-pill" data-cat="custom">Custom</button>
+            </div>
+            <select class="collection-status-filter" id="collection-status-filter">
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="draft">Drafts Only</option>
+              <option value="sample">Samples Only</option>
+              <option value="archived">Archived Only</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-body collection-modal-body">
+          <!-- Responsive Grid for Saved Product Cards -->
+          <div class="collection-grid" id="collection-grid">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Empty State -->
+          <div class="collection-empty-state" id="collection-empty-state" style="display: none;">
+            <div class="empty-icon"><i class="fa-solid fa-box-open"></i></div>
+            <h4>No Designs Found</h4>
+            <p>You haven't saved any designs matching this filter yet. Create your custom bracelet in the studio and save it to build your luxury collection.</p>
+            <button class="action-btn gold" id="btn-empty-save-current"><i class="fa-solid fa-bookmark"></i> Save Current Studio Design</button>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="justify-content: space-between;">
+          <button class="action-btn" id="btn-open-backup-modal"><i class="fa-solid fa-cloud-arrow-up"></i> Backup / Restore JSON</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="action-btn gold" id="btn-modal-save-current"><i class="fa-solid fa-plus"></i> Save Current Design</button>
+            <button class="action-btn primary" id="btn-done-collections-modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Share Design Modal (Epic 4) -->
+    <div class="modal-backdrop" id="share-modal" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i class="fa-solid fa-share-nodes"></i>
+            <h3>Share Custom Bracelet</h3>
+          </div>
+          <button class="close-modal-btn" id="btn-close-share-modal"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;">
+            Share this exact bracelet recipe, gemstone configuration, and pricing with clients or friends. Anyone opening this link will see your exact custom design loaded in their studio.
+          </p>
+
+          <!-- Share Link Box -->
+          <div class="meta-field">
+            <label>Direct Shareable Link</label>
+            <div class="title-input-wrapper">
+              <input type="text" id="share-link-input" readonly>
+              <button class="title-wand-btn" id="btn-copy-share-link" title="Copy shareable link">
+                <i class="fa-solid fa-copy"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Social / App Triggers -->
+          <div class="share-actions-grid" style="margin-top: 14px;">
+            <a id="btn-share-whatsapp" href="#" target="_blank" class="social-share-btn whatsapp">
+              <i class="fa-brands fa-whatsapp"></i> WhatsApp
+            </a>
+            <a id="btn-share-twitter" href="#" target="_blank" class="social-share-btn twitter">
+              <i class="fa-brands fa-x-twitter"></i> X / Twitter
+            </a>
+            <a id="btn-share-email" href="#" class="social-share-btn email">
+              <i class="fa-solid fa-envelope"></i> Email Specs
+            </a>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn primary" id="btn-done-share-modal">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backup & Restore Modal (Epic 4) -->
+    <div class="modal-backdrop" id="backup-modal" style="display: none;">
+      <div class="modal-card wide">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i class="fa-solid fa-database"></i>
+            <h3>Collection Backup & Restore</h3>
+          </div>
+          <button class="close-modal-btn" id="btn-close-backup-modal"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Dual Tabs: Export vs Import -->
+        <div class="modal-tabs">
+          <button class="modal-tab-btn active" data-tab="export">
+            <i class="fa-solid fa-file-export"></i> Export JSON Backup
+          </button>
+          <button class="modal-tab-btn" data-tab="import">
+            <i class="fa-solid fa-file-import"></i> Restore from JSON
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Pane 1: Export -->
+          <div id="backup-pane-export">
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 14px;">
+              Download your complete catalog of saved bracelets, SKU codes, custom rates, and cost parameters as an offline, cross-device portable JSON file.
+            </p>
+
+            <div class="backup-export-cards-grid">
+              <div class="backup-option-card">
+                <div class="backup-card-icon"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="backup-card-info">
+                  <h4>Full Studio Collection Backup</h4>
+                  <p>Includes all <span id="backup-export-count">0</span> saved designs, custom pricing settings, and SKU records.</p>
+                </div>
+                <button class="action-btn gold" id="btn-download-full-backup">
+                  <i class="fa-solid fa-download"></i> Download Full Backup
+                </button>
+              </div>
+
+              <div class="backup-option-card">
+                <div class="backup-card-icon"><i class="fa-solid fa-gem"></i></div>
+                <div class="backup-card-info">
+                  <h4>Active Design Only</h4>
+                  <p>Export currently opened bracelet in studio (<span id="backup-active-sku">SKU</span>) as a single product file.</p>
+                </div>
+                <button class="action-btn" id="btn-download-active-product">
+                  <i class="fa-solid fa-file-arrow-down"></i> Export Active Design
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pane 2: Import -->
+          <div id="backup-pane-import" style="display: none;">
+            <!-- Dropzone -->
+            <div class="import-dropzone" id="import-dropzone">
+              <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+              <h4>Drag & Drop AuraCraft Backup JSON File</h4>
+              <p>or click to browse file from your computer</p>
+              <input type="file" id="backup-file-input" accept=".json,application/json" style="display: none;">
+              <button class="action-btn" id="btn-browse-backup-file" type="button" style="margin-top: 10px;"><i class="fa-solid fa-folder-open"></i> Choose JSON File</button>
+            </div>
+
+            <!-- Staged File Preview & Options -->
+            <div id="import-staged-area" style="display: none; margin-top: 14px;">
+              <div class="import-file-badge">
+                <i class="fa-solid fa-file-lines"></i>
+                <span id="import-filename">backup.json</span>
+                <span class="badge" id="import-item-count">0 Products Found</span>
+              </div>
+
+              <div class="import-mode-selection" style="margin-top: 12px;">
+                <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Restore Strategy:</label>
+                <div class="import-modes-grid">
+                  <label class="import-mode-label">
+                    <input type="radio" name="import-mode" value="merge" checked>
+                    <div>
+                      <strong>Merge & Deduplicate (Recommended)</strong>
+                      <small>Adds new designs and updates existing items without overwriting other saved designs.</small>
+                    </div>
+                  </label>
+                  <label class="import-mode-label">
+                    <input type="radio" name="import-mode" value="replace">
+                    <div>
+                      <strong>Replace Entire Collection</strong>
+                      <small>Clears existing local collection and replaces it with the backup contents.</small>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="action-btn primary" id="btn-execute-restore" style="display: none;"><i class="fa-solid fa-check"></i> Restore Now</button>
+          <button class="action-btn" id="btn-cancel-backup-modal">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast (Enhanced Epic 5) -->
+    <div class="toast-notification" id="toast-notification" style="display: none;">
+      <div class="toast-icon-wrapper" id="toast-icon-wrapper">
+        <i class="fa-solid fa-circle-check" id="toast-icon"></i>
+      </div>
+      <div class="toast-content-wrapper">
+        <div class="toast-title" id="toast-title">Success</div>
+        <div class="toast-text" id="toast-text">Action completed successfully</div>
+      </div>
+      <button class="toast-close-btn" id="btn-toast-close" title="Dismiss notification"><i class="fa-solid fa-xmark"></i></button>
+      <div class="toast-progress-bar" id="toast-progress-bar"></div>
+    </div>
+
+  </div>
+
+  <!-- =========================================================================
+       PRINTABLE MANUFACTURING SPECIFICATION SHEET (Epic 5 - @media print)
+       ========================================================================= -->
+  <div id="printable-spec-sheet" class="printable-spec-sheet">
+    <div class="print-sheet-inner">
+      <!-- Sheet Header -->
+      <header class="print-header">
+        <div class="print-brand-row">
+          <div class="print-brand-left">
+            <div class="print-logo-mark"><i class="fa-solid fa-gem"></i></div>
+            <div>
+              <h1 class="print-brand-title">AURA CRAFT</h1>
+              <p class="print-brand-sub">FINE LUXURY GEMSTONE BRACELET ATELIER</p>
+            </div>
+          </div>
+          <div class="print-meta-right">
+            <div class="print-doc-badge">MANUFACTURING SPECIFICATION & JOB RECIPE</div>
+            <div class="print-meta-grid">
+              <span class="meta-lbl">JOB REF:</span> <strong id="print-job-id">AC-JOB-98214</strong>
+              <span class="meta-lbl">DATE:</span> <span id="print-date">05 SEP 2026</span>
+              <span class="meta-lbl">STATUS:</span> <span id="print-status-badge">ACTIVE PRODUCTION</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <hr class="print-divider gold">
+
+      <!-- Top Section: Visual Render & Product Identification -->
+      <section class="print-section print-overview-grid">
+        <!-- Left: Render Thumbnail & Physical Dimensions -->
+        <div class="print-render-card">
+          <div class="print-img-wrapper">
+            <img id="print-bracelet-img" alt="Bracelet Visual Render" src="">
+          </div>
+          <div class="print-dimensions-grid">
+            <div class="print-dim-item">
+              <span class="dim-lbl">TOTAL BEADS (BITS)</span>
+              <strong id="print-dim-bits">26 Beads</strong>
+            </div>
+            <div class="print-dim-item">
+              <span class="dim-lbl">BEAD DIAMETER</span>
+              <strong id="print-dim-diameter">8.0 mm</strong>
+            </div>
+            <div class="print-dim-item">
+              <span class="dim-lbl">INNER CIRCUMFERENCE</span>
+              <strong id="print-dim-circumference">17.5 cm (Standard)</strong>
+            </div>
+            <div class="print-dim-item">
+              <span class="dim-lbl">CORD SPECIFICATION</span>
+              <strong id="print-dim-cord">Elastic Stretch (0.8mm)</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: SKU Barcode, Product Title & Energy Profile -->
+        <div class="print-details-card">
+          <div class="print-title-box">
+            <span class="print-cat-badge" id="print-category-badge">CUSTOM CURATION</span>
+            <h2 id="print-product-title">Solar Vitality & Prosperity Bracelet</h2>
+          </div>
+
+          <!-- Simulated Barcode & QR Code Block -->
+          <div class="print-barcode-container">
+            <div class="print-barcode-box">
+              <div class="print-simulated-barcode" id="print-simulated-barcode">
+                <!-- Procedural SVG/CSS barcode bars generated dynamically -->
+              </div>
+              <div class="print-sku-display" id="print-sku-text">AC-LAV-CIT-26B-8MM-001</div>
+            </div>
+            <div class="print-qrcode-box">
+              <div class="print-simulated-qr" id="print-simulated-qr">
+                <i class="fa-solid fa-qrcode"></i>
+              </div>
+              <span class="qr-lbl">SCAN DESIGN</span>
+            </div>
+          </div>
+
+          <div class="print-energy-box">
+            <h4><i class="fa-solid fa-sparkles"></i> ENERGY ATTUNEMENT & INTENTION</h4>
+            <p id="print-energy-description">An authentic formulation balancing solar plexus strength and root grounding through harmonious elemental frequencies.</p>
+          </div>
+
+          <div class="print-bead-sequence-box">
+            <h4><i class="fa-solid fa-circle-nodes"></i> BEAD STRINGING SEQUENCE</h4>
+            <div class="print-sequence-preview" id="print-sequence-preview">
+              <!-- Bead chips sequence -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Bill of Materials (BOM) -->
+      <section class="print-section">
+        <h3 class="print-section-heading"><i class="fa-solid fa-cubes-stacked"></i> 1. BILL OF MATERIALS (BOM)</h3>
+        <table class="print-table" id="print-bom-table">
+          <thead>
+            <tr>
+              <th style="width: 5%;">#</th>
+              <th style="width: 35%;">Mineral / Gemstone Name</th>
+              <th style="width: 20%;">Mineral Family</th>
+              <th style="width: 15%;">Chakra Resonance</th>
+              <th style="width: 10%; text-align: center;">Qty (Bits)</th>
+              <th style="width: 15%; text-align: right;">Unit Rate (₹)</th>
+              <th style="width: 15%; text-align: right;">Extended Cost (₹)</th>
+            </tr>
+          </thead>
+          <tbody id="print-bom-tbody">
+            <!-- Populated dynamically -->
+          </tbody>
+          <tfoot>
+            <tr class="print-table-total-row">
+              <td colspan="4"><strong>TOTAL RAW MINERALS COMPOSITION</strong></td>
+              <td style="text-align: center;"><strong id="print-bom-total-bits">26</strong></td>
+              <td></td>
+              <td style="text-align: right;"><strong id="print-bom-total-gems-cost">₹260.00</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+
+      <!-- Section 3: Landed Cost Waterfall & Commercial Pricing Breakdown -->
+      <section class="print-section">
+        <h3 class="print-section-heading"><i class="fa-solid fa-calculator"></i> 2. COMMERCIAL PRICING WATERFALL & LANDED COST</h3>
+        <div class="print-cost-grid">
+          <div class="print-cost-card">
+            <span class="cost-card-lbl">Raw Gems Cost</span>
+            <strong class="cost-card-val" id="print-cost-raw-gems">₹260.00</strong>
+          </div>
+          <div class="print-cost-card">
+            <span class="cost-card-lbl">Base & Packaging</span>
+            <strong class="cost-card-val" id="print-cost-packaging">₹50.00</strong>
+          </div>
+          <div class="print-cost-card">
+            <span class="cost-card-lbl">Logistics & Insured Ship</span>
+            <strong class="cost-card-val" id="print-cost-logistics">₹57.00</strong>
+          </div>
+          <div class="print-cost-card">
+            <span class="cost-card-lbl">Overheads & Operating</span>
+            <strong class="cost-card-val" id="print-cost-overheads">₹160.00</strong>
+          </div>
+          <div class="print-cost-card">
+            <span class="cost-card-lbl">Atelier Margin</span>
+            <strong class="cost-card-val" id="print-cost-margin">₹200.00</strong>
+          </div>
+          <div class="print-cost-card highlight">
+            <span class="cost-card-lbl">Total Product Cost / Selling Price</span>
+            <strong class="cost-card-val text-gold" id="print-cost-selling-price">₹727.00</strong>
+          </div>
+          <div class="print-cost-card discount">
+            <span class="cost-card-lbl">Dynamic 10% MRP Discount Allowance</span>
+            <strong class="cost-card-val" id="print-cost-discount">₹75.00</strong>
+          </div>
+          <div class="print-cost-card mrp">
+            <span class="cost-card-lbl">Recommended Retail Price (MRP)</span>
+            <strong class="cost-card-val text-gold" id="print-cost-mrp">₹749.00</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: Quality Assurance & Artisan Sign-Off -->
+      <section class="print-section">
+        <h3 class="print-section-heading"><i class="fa-solid fa-clipboard-check"></i> 3. QUALITY ASSURANCE & ARTISAN SIGN-OFF</h3>
+        <div class="print-qc-grid">
+          <div class="print-qc-checklist">
+            <label class="print-qc-item"><span class="print-checkbox"></span> 100% Genuine Natural Minerals Inspected (No synthetic dyes)</label>
+            <label class="print-qc-item"><span class="print-checkbox"></span> Elastic Tension Calibration (4x stretch resistance tested)</label>
+            <label class="print-qc-item"><span class="print-checkbox"></span> Triple-Knot Thermal Bond & Hidden Bead Crimp Verified</label>
+            <label class="print-qc-item"><span class="print-checkbox"></span> Luxury Satin Pouch, Velvet Box & Authenticity Card Sealed</label>
+          </div>
+          <div class="print-signoff-box">
+            <div class="signoff-field">
+              <span class="signoff-line"></span>
+              <span class="signoff-lbl">Master Artisan Signature</span>
+            </div>
+            <div class="signoff-field">
+              <span class="signoff-line"></span>
+              <span class="signoff-lbl">Quality Inspector & Date</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sheet Footer -->
+      <footer class="print-footer">
+        <p>AuraCraft Fine Jewelry Studio • Proprietary Manufacturing Specification Document • All Rights Reserved</p>
+      </footer>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
