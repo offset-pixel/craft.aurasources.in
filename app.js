@@ -1108,7 +1108,15 @@ class BackupEngine {
         valid: true,
         items: validItems,
         pricingConfig: parsed.pricingConfig || null,
-        count: validItems.length
+        count: validItems.length,
+        itemCount: validItems.length,
+        data: {
+          valid: true,
+          items: validItems,
+          pricingConfig: parsed.pricingConfig || null,
+          count: validItems.length,
+          itemCount: validItems.length
+        }
       };
     } catch (e) {
       return { valid: false, error: `JSON Parse error: ${e.message}` };
@@ -1116,7 +1124,11 @@ class BackupEngine {
   }
 
   static restoreBackup(validatedData, mode = 'merge') {
-    if (!validatedData || !validatedData.valid || !Array.isArray(validatedData.items)) {
+    const data = (validatedData && Array.isArray(validatedData.items))
+      ? validatedData
+      : (validatedData && validatedData.data && Array.isArray(validatedData.data.items) ? validatedData.data : validatedData);
+
+    if (!data || !data.valid || !Array.isArray(data.items)) {
       return { success: false, error: 'Invalid data provided to restore.' };
     }
 
@@ -4687,15 +4699,15 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     reader.onload = (e) => {
       const result = BackupEngine.parseAndValidate(e.target.result);
       if (result.valid) {
-        this.stagedBackupData = result.data;
+        this.stagedBackupData = result;
         const stagedArea = document.getElementById('full-import-staged-area');
         const filenameSpan = document.getElementById('full-import-filename');
         const countBadge = document.getElementById('full-import-item-count');
 
         if (stagedArea) stagedArea.style.display = 'block';
         if (filenameSpan) filenameSpan.textContent = file.name;
-        if (countBadge) countBadge.textContent = `${result.itemCount} ${result.itemCount === 1 ? 'Design' : 'Designs'} Found`;
-        this.showToast(`Validated backup: ${result.itemCount} designs ready for restore.`, 'success');
+        if (countBadge) countBadge.textContent = `${result.count} ${result.count === 1 ? 'Design' : 'Designs'} Found`;
+        this.showToast(`Validated backup: ${result.count} designs ready for restore.`, 'success');
       } else {
         this.stagedBackupData = null;
         this.showToast(`Invalid backup file: ${result.error}`, 'error');
