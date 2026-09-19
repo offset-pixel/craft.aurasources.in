@@ -468,6 +468,7 @@ const PRESETS = {
 // ============================================================================
 class GemstoneTextureEngine {
   static textureCache = new Map();
+  static loadedImages = new Map();
 
   static clearCache() {
     GemstoneTextureEngine.textureCache.clear();
@@ -480,6 +481,25 @@ class GemstoneTextureEngine {
 
     if (GemstoneTextureEngine.textureCache.has(key)) {
       return GemstoneTextureEngine.textureCache.get(key);
+    }
+
+    const imgFilename = stone.id.replace(/-/g, '_') + '.jpg';
+    let img = GemstoneTextureEngine.loadedImages.get(imgFilename);
+    
+    if (!img) {
+      img = new Image();
+      img.src = `assets/stones/${imgFilename}`;
+      img.onload = () => {
+        img.isLoaded = true;
+        GemstoneTextureEngine.textureCache.clear();
+        if (window.braceletApp) {
+          window.braceletApp.drawBracelet();
+        }
+      };
+      img.onerror = () => {
+        img.hasError = true;
+      };
+      GemstoneTextureEngine.loadedImages.set(imgFilename, img);
     }
 
     // Generate offscreen high-definition texture canvas
@@ -519,29 +539,33 @@ class GemstoneTextureEngine {
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.clip();
 
-    // Base Radial Color Gradient
-    const baseGrad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
-    baseGrad.addColorStop(0, stone.highlightColor || '#ffffff');
-    baseGrad.addColorStop(0.5, stone.baseColor || '#888888');
-    baseGrad.addColorStop(1, stone.deepColor || '#222222');
-    ctx.fillStyle = baseGrad;
-    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    if (img && img.isLoaded && !img.hasError) {
+      ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2);
+    } else {
+      // Base Radial Color Gradient
+      const baseGrad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+      baseGrad.addColorStop(0, stone.highlightColor || '#ffffff');
+      baseGrad.addColorStop(0.5, stone.baseColor || '#888888');
+      baseGrad.addColorStop(1, stone.deepColor || '#222222');
+      ctx.fillStyle = baseGrad;
+      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 
-    // Render Procedural Micro-Mineral Textures
-    GemstoneTextureEngine.renderMineralDetails(ctx, cx, cy, r, stone);
+      // Render Procedural Micro-Mineral Textures
+      GemstoneTextureEngine.renderMineralDetails(ctx, cx, cy, r, stone);
 
-    // Subsurface Scattering (SSS) Internal Glow
-    const isTranslucent = ['gem', 'rose-quartz', 'clear-quartz', 'amber', 'jade', 'precious-emerald', 'precious-ruby', 'precious-sapphire'].includes(stone.type) ||
-      ['citrine', 'amethyst', 'rose-quartz', 'clear-quartz', 'amber', 'emerald', 'ruby', 'blue-sapphire', 'green-aventurine', 'moss-agate'].includes(stone.id);
-    if (isTranslucent) {
-      const sssGrad = ctx.createRadialGradient(cx - r * 0.15, cy - r * 0.15, r * 0.05, cx, cy, r * 0.95);
-      sssGrad.addColorStop(0, stone.highlightColor ? stone.highlightColor + '66' : 'rgba(255, 255, 255, 0.4)');
-      sssGrad.addColorStop(0.45, stone.baseColor ? stone.baseColor + '33' : 'rgba(255, 255, 255, 0.15)');
-      sssGrad.addColorStop(1, 'transparent');
-      ctx.fillStyle = sssGrad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
+      // Subsurface Scattering (SSS) Internal Glow
+      const isTranslucent = ['gem', 'rose-quartz', 'clear-quartz', 'amber', 'jade', 'precious-emerald', 'precious-ruby', 'precious-sapphire'].includes(stone.type) ||
+        ['citrine', 'amethyst', 'rose-quartz', 'clear-quartz', 'amber', 'emerald', 'ruby', 'blue-sapphire', 'green-aventurine', 'moss-agate'].includes(stone.id);
+      if (isTranslucent) {
+        const sssGrad = ctx.createRadialGradient(cx - r * 0.15, cy - r * 0.15, r * 0.05, cx, cy, r * 0.95);
+        sssGrad.addColorStop(0, stone.highlightColor ? stone.highlightColor + '66' : 'rgba(255, 255, 255, 0.4)');
+        sssGrad.addColorStop(0.45, stone.baseColor ? stone.baseColor + '33' : 'rgba(255, 255, 255, 0.15)');
+        sssGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = sssGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     // 3D Spherical Volume Shading & Ambient Rim Shadow

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Export Assets</title>
+</head>
+<body>
+    <script src="app.js"></script>
+    <script>
+        window.onload = function() {
+            setTimeout(async () => {
+                const images = {};
+                for (const stone of STONES_DB) {
+                    // Create base realistic bead canvas with r=100
+                    const canvas = GemstoneTextureEngine.getBeadTexture(stone, 100, false, false, false);
+                    images[stone.id] = canvas.toDataURL('image/png');
+                }
+                
+                // Send to local server
+                await fetch('http://localhost:8000', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(images)
+                });
+                
+                document.body.innerHTML = '<h1>Assets Exported Successfully!</h1>';
+            }, 500);
+        };
+    </script>
+</body>
+</html>
