@@ -1436,6 +1436,7 @@ class FirebaseManager {
   static isInitialized = false;
   static db = null;
   static auth = null;
+  static secondaryApp = null;
   static studioRef = null;
 
   static DEFAULT_CONFIG = {
@@ -1469,6 +1470,9 @@ class FirebaseManager {
         if (!firebase.apps || firebase.apps.length === 0) {
           firebase.initializeApp(FirebaseManager.DEFAULT_CONFIG);
         }
+        if (firebase.apps.length === 1) {
+          FirebaseManager.secondaryApp = firebase.initializeApp(FirebaseManager.DEFAULT_CONFIG, "Secondary");
+        }
         FirebaseManager.auth = firebase.auth();
         FirebaseManager.db = firebase.database();
         FirebaseManager.isInitialized = true;
@@ -1476,40 +1480,55 @@ class FirebaseManager {
         // Auth state listener
         FirebaseManager.auth.onAuthStateChanged(async (user) => {
           if (user) {
+            document.querySelector('.app-container')?.classList.remove('auth-locked');
+            const teamModal = document.getElementById('team-auth-modal');
+            if (teamModal) teamModal.style.display = 'none';
+
             FirebaseManager.currentUser = {
               uid: user.uid,
               displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Team Artisan'),
               email: user.email || 'guest@aurasources.in',
               photoURL: user.photoURL || null,
-              isAnonymous: user.isAnonymous
+              isAnonymous: user.isAnonymous,
+              role: 'user' // Default role
             };
+            
+            // Fetch role from DB
+            try {
+              const snapshot = await FirebaseManager.db.ref(`team_catalog/users/${user.uid}`).once('value');
+              const data = snapshot.val();
+              if (data && data.role) {
+                FirebaseManager.currentUser.role = data.role;
+              }
+            } catch (e) {
+              console.warn("Could not fetch user role", e);
+            }
+
             // Sync user data to realtime database
             await FirebaseManager.pushUserProfile(FirebaseManager.currentUser);
+            FirebaseManager.updateUserUI();
+            FirebaseManager.attachRealtimeListeners();
+            
+            // Show Admin Dashboard button if admin
+            const adminBtn = document.getElementById('btn-admin-dashboard');
+            if (adminBtn) {
+               adminBtn.style.display = FirebaseManager.currentUser.role === 'admin' ? 'flex' : 'none';
+            }
           } else {
-            // Restore local session or create default team profile
-            const savedUser = localStorage.getItem('auracraft_team_user');
-            if (savedUser) {
-              try { FirebaseManager.currentUser = JSON.parse(savedUser); } catch (e) { }
-            }
-            if (!FirebaseManager.currentUser) {
-              FirebaseManager.currentUser = {
-                uid: 'artisan_' + Math.random().toString(36).substr(2, 6),
-                displayName: 'Krunal (Artisan)',
-                email: 'artisan@aurasources.in',
-                isAnonymous: true
-              };
-            }
-            // Auto sign in anonymously to obtain a real Firebase Auth token for Realtime DB security rules
-            try {
-              FirebaseManager.auth.signInAnonymously().catch(e => {
-                console.warn('Anonymous sign-in skipped (Enable Anonymous sign-in in Firebase Auth console if needed):', e.message);
-              });
-            } catch (authErr) {
-              console.warn('Auto auth error:', authErr);
-            }
+            // Force Auth Lock
+            document.querySelector('.app-container')?.classList.add('auth-locked');
+            const teamModal = document.getElementById('team-auth-modal');
+            if (teamModal) teamModal.style.display = 'flex';
+            
+            // Remove close buttons if unauthenticated
+            const closeBtn1 = document.getElementById('btn-close-team-modal');
+            if (closeBtn1) closeBtn1.style.display = 'none';
+            const closeBtn2 = document.getElementById('btn-close-team-auth');
+            if (closeBtn2) closeBtn2.style.display = 'none';
+
+            FirebaseManager.currentUser = null;
+            FirebaseManager.updateUserUI();
           }
-          FirebaseManager.updateUserUI();
-          FirebaseManager.attachRealtimeListeners();
         });
 
       } catch (err) {
@@ -1530,6 +1549,7 @@ class FirebaseManager {
         email: userData.email || '',
         photoURL: userData.photoURL || null,
         isAnonymous: Boolean(userData.isAnonymous),
+        role: userData.role || 'user',
         lastActive: new Date().toISOString()
       };
       await FirebaseManager.db.ref(`team_catalog/users/${userData.uid}`).set(payload);
@@ -1540,20 +1560,18 @@ class FirebaseManager {
   }
 
   static initFallbackUser() {
-    const savedUser = localStorage.getItem('auracraft_team_user');
-    if (savedUser) {
-      try { FirebaseManager.currentUser = JSON.parse(savedUser); } catch (e) { }
-    }
-    if (!FirebaseManager.currentUser) {
-      FirebaseManager.currentUser = {
-        uid: 'artisan_local_' + Math.random().toString(36).substr(2, 6),
-        displayName: 'Krunal (Artisan)',
-        email: 'artisan@aurasources.in',
-        isAnonymous: true
-      };
-    }
+    // If we're offline or Firebase fails to load, enforce lock since login is strictly required
+    document.querySelector('.app-container')?.classList.add('auth-locked');
+    const teamModal = document.getElementById('team-auth-modal');
+    if (teamModal) teamModal.style.display = 'flex';
+    const closeBtn1 = document.getElementById('btn-close-team-modal');
+    if (closeBtn1) closeBtn1.style.display = 'none';
+    const closeBtn2 = document.getElementById('btn-close-team-auth');
+    if (closeBtn2) closeBtn2.style.display = 'none';
+
+    FirebaseManager.currentUser = null;
     FirebaseManager.updateUserUI();
-    FirebaseManager.updateSyncStatusBadge('synced', 'Local Offline');
+    FirebaseManager.updateSyncStatusBadge('offline', 'Local Offline');
   }
 
   static attachRealtimeListeners() {
@@ -2554,6 +2572,7 @@ class BraceletStudio {
     this.renderStonesCatalog();
     this.bindEvents();
     this.initTeamAuthEvents();
+    this.initAdminDashboardEvents();
     this.initViewRouter();
     this.initSidebarResizers();
     this.initAuthGate();
@@ -2809,8 +2828,18 @@ class BraceletStudio {
       ctx.fillRect(0, 0, width, height);
     }
 
-    const baseRadius = (width * 0.35);
-    const beadRadiusPx = (13 + (diameter - 6) * 2.8) * (width / 800);
+    let beadRadiusPx = (13 + (diameter - 6) * 2.8) * (width / 800);
+    
+    // Dynamically calculate radius so beads touch (with 2% gap)
+    let baseRadius = (beadRadiusPx * 1.02) / Math.sin(Math.PI / count);
+
+    // Ensure it doesn't overflow the canvas
+    const maxRadius = width * 0.38;
+    if (baseRadius > maxRadius) {
+      const scale = maxRadius / baseRadius;
+      baseRadius = maxRadius;
+      beadRadiusPx *= scale;
+    }
 
     // 1. Draw Cord
     this.drawCord(ctx, centerX, centerY, baseRadius, cord);
@@ -5320,61 +5349,6 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
       });
     }
 
-    // Email Sign Up
-    if (emailSignUpBtn) {
-      emailSignUpBtn.addEventListener('click', async () => {
-        const email = document.getElementById('auth-email-input')?.value.trim();
-        const password = document.getElementById('auth-password-input')?.value;
-        const displayName = document.getElementById('auth-display-name-input')?.value.trim();
-
-        if (!email || !password) {
-          this.showToast('Please enter an email and password to register.', 'error');
-          return;
-        }
-
-        if (typeof firebase !== 'undefined' && firebase.auth) {
-          try {
-            const res = await firebase.auth().createUserWithEmailAndPassword(email, password);
-            if (displayName && res.user) {
-              await res.user.updateProfile({ displayName });
-            }
-            this.showToast('Registered team member account!', 'success');
-            if (teamModal) teamModal.style.display = 'none';
-          } catch (err) {
-            this.showToast(`Registration: ${err.message}`, 'error');
-          }
-        } else {
-          FirebaseManager.currentUser = {
-            uid: 'artisan_' + Date.now(),
-            displayName: displayName || email.split('@')[0],
-            email,
-            isAnonymous: false
-          };
-          localStorage.setItem('auracraft_team_user', JSON.stringify(FirebaseManager.currentUser));
-          FirebaseManager.updateUserUI();
-          this.showToast(`Registered as ${FirebaseManager.currentUser.displayName}`, 'success');
-          if (teamModal) teamModal.style.display = 'none';
-        }
-      });
-    }
-
-    // Guest Mode
-    if (guestBtn) {
-      guestBtn.addEventListener('click', () => {
-        const displayName = document.getElementById('auth-display-name-input')?.value.trim() || 'Artisan Guest';
-        FirebaseManager.currentUser = {
-          uid: 'guest_' + Math.random().toString(36).substr(2, 6),
-          displayName,
-          email: 'guest@aurasources.in',
-          isAnonymous: true
-        };
-        localStorage.setItem('auracraft_team_user', JSON.stringify(FirebaseManager.currentUser));
-        FirebaseManager.updateUserUI();
-        this.showToast(`Continuing as ${displayName}`, 'info');
-        if (teamModal) teamModal.style.display = 'none';
-      });
-    }
-
     // Sign Out
     if (signOutBtn) {
       signOutBtn.addEventListener('click', async () => {
@@ -5382,12 +5356,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
           await firebase.auth().signOut();
         }
         localStorage.removeItem('auracraft_team_user');
-        FirebaseManager.currentUser = {
-          uid: 'guest_' + Math.random().toString(36).substr(2, 6),
-          displayName: 'Artisan',
-          email: 'guest@aurasources.in',
-          isAnonymous: true
-        };
+        FirebaseManager.currentUser = null;
         FirebaseManager.updateUserUI();
         this.showToast('Signed out of team workspace.', 'info');
         if (teamModal) teamModal.style.display = 'none';
@@ -5463,6 +5432,100 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
         this.saveAsCallback = null;
       });
     }
+  }
+
+  initAdminDashboardEvents() {
+    const adminBtn = document.getElementById('btn-admin-dashboard');
+    const adminModal = document.getElementById('admin-dashboard-modal');
+    const closeAdminBtns = [document.getElementById('btn-close-admin-modal'), document.getElementById('btn-close-admin-dashboard')];
+    
+    if (adminBtn) {
+      adminBtn.addEventListener('click', () => {
+        if (adminModal) adminModal.style.display = 'flex';
+        this.loadAdminUserList();
+      });
+    }
+    
+    closeAdminBtns.forEach(btn => {
+      if (btn) btn.addEventListener('click', () => {
+        if (adminModal) adminModal.style.display = 'none';
+      });
+    });
+
+    const createBtn = document.getElementById('btn-admin-create-user');
+    if (createBtn) {
+      createBtn.addEventListener('click', async () => {
+        const email = document.getElementById('admin-new-user-email')?.value.trim();
+        const password = document.getElementById('admin-new-user-password')?.value;
+        const displayName = document.getElementById('admin-new-user-name')?.value.trim();
+        const role = document.getElementById('admin-new-user-role')?.value;
+
+        if (!email || !password) {
+          this.showToast('Email and password required.', 'error');
+          return;
+        }
+        
+        if (FirebaseManager.secondaryApp) {
+          try {
+            const secondaryAuth = FirebaseManager.secondaryApp.auth();
+            const res = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+            if (res.user) {
+              if (displayName) await res.user.updateProfile({ displayName });
+              
+              // Push to DB
+              await FirebaseManager.db.ref(`team_catalog/users/${res.user.uid}`).set({
+                uid: res.user.uid,
+                displayName: displayName || 'Artisan',
+                email: email,
+                role: role || 'user',
+                isAnonymous: false,
+                lastActive: new Date().toISOString()
+              });
+              
+              // Sign out from secondary app
+              await secondaryAuth.signOut();
+              
+              this.showToast(`User ${email} created successfully!`, 'success');
+              
+              // clear form
+              document.getElementById('admin-new-user-email').value = '';
+              document.getElementById('admin-new-user-password').value = '';
+              document.getElementById('admin-new-user-name').value = '';
+              
+              this.loadAdminUserList();
+            }
+          } catch (err) {
+            this.showToast(`Error creating user: ${err.message}`, 'error');
+          }
+        } else {
+           this.showToast('Secondary Firebase app not initialized.', 'error');
+        }
+      });
+    }
+  }
+
+  loadAdminUserList() {
+    if (!FirebaseManager.db) return;
+    const listEl = document.getElementById('admin-user-list');
+    if (!listEl) return;
+    
+    FirebaseManager.db.ref('team_catalog/users').once('value', (snapshot) => {
+      const users = snapshot.val();
+      listEl.innerHTML = '';
+      if (users) {
+        Object.values(users).forEach(u => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">${u.displayName || '-'}</td>
+            <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">${u.email || '-'}</td>
+            <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">
+              <span class="badge ${u.role === 'admin' ? 'gold' : ''}">${u.role || 'user'}</span>
+            </td>
+          `;
+          listEl.appendChild(tr);
+        });
+      }
+    });
   }
 
   // ============================================================================

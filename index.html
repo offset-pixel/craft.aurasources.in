@@ -102,21 +102,6 @@
 
       <!-- Clean Header Quick Actions & Collaboration -->
       <div class="header-actions">
-        <!-- New Project Action -->
-        <button id="btn-header-new-project" class="action-btn header-new-btn" title="Create New Bracelet Project (Guarded from overwrite)">
-          <i class="fa-solid fa-plus"></i> <span>New Project</span>
-        </button>
-
-        <!-- Save Dropdown Action Group -->
-        <div class="save-actions-group">
-          <button id="btn-header-save-changes" class="action-btn gold" title="Save changes to current project (Ctrl+S)">
-            <i class="fa-solid fa-floppy-disk"></i> <span id="header-save-btn-label">Save Changes</span>
-          </button>
-          <button id="btn-header-save-as-new" class="action-btn save-as-btn" title="Save as a new copy / variant without overwriting">
-            <i class="fa-solid fa-copy"></i> <span>Save As New</span>
-          </button>
-        </div>
-
         <!-- Realtime Database Cloud Sync Status Indicator -->
         <div class="cloud-sync-badge synced" id="cloud-sync-badge" title="Firebase Realtime Database Sync Status">
           <i class="fa-solid fa-cloud" id="cloud-sync-icon"></i>
@@ -127,16 +112,6 @@
         <button id="btn-team-profile" class="action-btn team-user-btn" title="Team Access & User Authentication">
           <div class="user-avatar-circle" id="header-user-avatar"><i class="fa-solid fa-user"></i></div>
           <span id="header-user-name">Team User</span>
-        </button>
-
-        <button id="btn-open-share-modal" class="action-btn icon-only-btn" title="Share Bracelet Recipe URL (Dialog)">
-          <i class="fa-solid fa-share-nodes"></i>
-        </button>
-        <button id="btn-export-png" class="action-btn icon-only-btn" title="Export High-Definition Render (Dialog)">
-          <i class="fa-solid fa-camera-retro"></i>
-        </button>
-        <button id="btn-header-print-specs" class="action-btn icon-only-btn gold" title="Print Manufacturing Specification Sheet (Ctrl+P)">
-          <i class="fa-solid fa-print"></i>
         </button>
       </div>
     </header>
@@ -458,6 +433,17 @@
                    </button>
                    <button class="action-btn header-new-btn" id="btn-new-project-sidebar" title="Start a fresh blank bracelet">
                      <i class="fa-solid fa-plus"></i> <span>New Project</span>
+                   </button>
+                 </div>
+                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                   <button id="btn-open-share-modal" class="action-btn" title="Share Bracelet Recipe URL" style="justify-content: center;">
+                     <i class="fa-solid fa-share-nodes"></i> <span style="font-size: 11px;">Share</span>
+                   </button>
+                   <button id="btn-export-png" class="action-btn" title="Export High-Definition Render" style="justify-content: center;">
+                     <i class="fa-solid fa-camera-retro"></i> <span style="font-size: 11px;">Export</span>
+                   </button>
+                   <button id="btn-header-print-specs" class="action-btn gold" title="Print Manufacturing Specification Sheet" style="justify-content: center;">
+                     <i class="fa-solid fa-print"></i> <span style="font-size: 11px;">Print</span>
                    </button>
                  </div>
                </div>
@@ -1464,6 +1450,9 @@
               <button class="action-btn danger full-width" id="btn-auth-signout" style="width: 100%; justify-content: center;">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out of Team
               </button>
+              <button class="action-btn primary full-width" id="btn-admin-dashboard" style="display: none; width: 100%; justify-content: center;">
+                <i class="fa-solid fa-user-shield"></i> Admin Dashboard
+              </button>
             </div>
           </div>
 
@@ -1498,18 +1487,72 @@
               <button class="action-btn primary" id="btn-auth-email-signin" style="flex: 1; justify-content: center;">
                 <i class="fa-solid fa-right-to-bracket"></i> Sign In
               </button>
-              <button class="action-btn" id="btn-auth-email-signup" style="flex: 1; justify-content: center;">
-                <i class="fa-solid fa-user-plus"></i> Register
-              </button>
             </div>
-
-            <button class="action-btn full-width" id="btn-auth-guest-mode" style="width: 100%; justify-content: center; margin-top: 10px; opacity: 0.85;">
-              <i class="fa-solid fa-user-secret"></i> Continue as Offline Guest
-            </button>
           </div>
         </div>
         <div class="modal-footer">
           <button class="action-btn" id="btn-close-team-auth">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Dashboard Modal -->
+    <div class="modal-backdrop" id="admin-dashboard-modal" style="display: none;">
+      <div class="modal-card" style="max-width: 600px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i class="fa-solid fa-user-shield"></i>
+            <h3>Admin Dashboard</h3>
+          </div>
+          <button class="close-modal-btn" id="btn-close-admin-modal"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="admin-section">
+            <h4 style="margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Create New User</h4>
+            <div class="meta-field" style="margin-bottom: 8px;">
+              <label>Email Address</label>
+              <input type="email" id="admin-new-user-email" placeholder="user@aurasources.in">
+            </div>
+            <div class="meta-field" style="margin-bottom: 8px;">
+              <label>Password</label>
+              <input type="password" id="admin-new-user-password" placeholder="••••••••">
+            </div>
+            <div class="meta-field" style="margin-bottom: 8px;">
+              <label>Display Name</label>
+              <input type="text" id="admin-new-user-name" placeholder="Artisan Name">
+            </div>
+            <div class="meta-field" style="margin-bottom: 8px;">
+              <label>Role</label>
+              <select id="admin-new-user-role" style="width: 100%; padding: 8px; border-radius: 4px; background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color);">
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button class="action-btn primary" id="btn-admin-create-user" style="margin-top: 10px;">
+              <i class="fa-solid fa-user-plus"></i> Create User
+            </button>
+          </div>
+          
+          <div class="admin-section" style="margin-top: 24px;">
+            <h4 style="margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">User Directory</h4>
+            <div class="table-container" style="max-height: 250px; overflow-y: auto; margin-top: 10px; border: 1px solid var(--border-color); border-radius: 4px;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                  <tr style="background: var(--bg-level-2); text-align: left; border-bottom: 1px solid var(--border-color);">
+                    <th style="padding: 8px;">Name</th>
+                    <th style="padding: 8px;">Email</th>
+                    <th style="padding: 8px;">Role</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-user-list">
+                  <!-- User rows will be populated here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn" id="btn-close-admin-dashboard">Close</button>
         </div>
       </div>
     </div>

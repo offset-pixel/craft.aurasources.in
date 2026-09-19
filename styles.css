@@ -94,6 +94,13 @@ body {
   height: 100dvh;
   width: 100vw;
   overflow: hidden;
+  transition: filter 0.3s ease, pointer-events 0.3s ease;
+}
+
+.app-container.auth-locked {
+  filter: blur(8px) brightness(0.7);
+  pointer-events: none;
+  user-select: none;
 }
 
 /* ==========================================================================
@@ -1410,6 +1417,25 @@ body {
   gap: 3px;
 }
 
+.meta-field input,
+.meta-field select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.meta-field input:focus,
+.meta-field select:focus {
+  border-color: var(--border-focus);
+}
+
 .meta-field label {
   font-size: 0.65rem;
   color: var(--text-subtle);
@@ -2630,10 +2656,10 @@ body {
 }
 
 .settings-subtab-btn.active {
-  background: var(--accent-gold-gradient);
-  color: #0c0d12;
+  background: var(--accent-gold-muted);
+  color: var(--accent-gold);
   font-weight: 700;
-  box-shadow: 0 2px 10px rgba(201, 169, 110, 0.35);
+  border-color: var(--accent-gold-muted);
 }
 
 .settings-subtab-btn i {
