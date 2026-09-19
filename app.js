@@ -2575,7 +2575,7 @@ class BraceletStudio {
     this.initAdminDashboardEvents();
     this.initViewRouter();
     this.initSidebarResizers();
-    this.initAuthGate();
+
     this.updateUI();
     this.updateCollectionCountBadge();
     this.updateProjectStatusBanner();
@@ -4897,7 +4897,7 @@ Bead Sequence: ${this.beads.map((b, i) => `#${i + 1}:${b}`).join(', ')}`;
         });
 
         PricingEngine.saveConfig(newConfig);
-        this.updatePricingSnapshot();
+
         this.updateUI();
         this.populateFullPricingView();
         this.showToast('Pricing configuration saved locally!', 'success');
@@ -4907,7 +4907,7 @@ Bead Sequence: ${this.beads.map((b, i) => `#${i + 1}:${b}`).join(', ')}`;
     if (fullPricingResetBtn) {
       fullPricingResetBtn.addEventListener('click', () => {
         PricingEngine.resetToDefaults();
-        this.updatePricingSnapshot();
+
         this.updateUI();
         this.populateFullPricingView();
         this.showToast('Pricing reset to factory CSV defaults.', 'info');
@@ -4929,7 +4929,7 @@ Bead Sequence: ${this.beads.map((b, i) => `#${i + 1}:${b}`).join(', ')}`;
         }
         PricingEngine.config.stoneRates = {};
         PricingEngine.saveConfig(PricingEngine.config);
-        this.updatePricingSnapshot();
+
         this.updateUI();
         this.renderEnhancedStoneRates();
         this.showToast('Reset all stone rates to CSV base prices.', 'success');
@@ -6617,7 +6617,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
             if (!PricingEngine.config.stoneRates) PricingEngine.config.stoneRates = {};
             PricingEngine.config.stoneRates[st.id] = val;
             PricingEngine.saveConfig(PricingEngine.config);
-            this.updatePricingSnapshot();
+
             this.updateUI();
             this.renderEnhancedStoneRates();
             this.showToast(`Updated ${st.name} rate to ₹${val.toFixed(2)}/bead`, 'success');
@@ -6632,7 +6632,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
           if (PricingEngine.config.stoneRates && PricingEngine.config.stoneRates[st.id] !== undefined) {
             delete PricingEngine.config.stoneRates[st.id];
             PricingEngine.saveConfig(PricingEngine.config);
-            this.updatePricingSnapshot();
+
             this.updateUI();
             this.renderEnhancedStoneRates();
             this.showToast(`Reset ${st.name} to base rate ₹${baseRate.toFixed(2)}`, 'info');
@@ -6852,7 +6852,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     if (result.success) {
       this.updateCollectionCountBadge();
       this.renderFullCollectionsGrid();
-      this.updatePricingSnapshot();
+
       this.updateUI();
       if (mode === 'replace') {
         this.showToast(`Restored collection (${result.count} designs)!`, 'success');
@@ -6864,163 +6864,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     }
   }
 
-  // ============================================================================
-  // Atelier Security & Passcode Gate Engine
-  // ============================================================================
-  initAuthGate() {
-    this.authPinBuffer = '';
-    const gateOverlay = document.getElementById('atelier-auth-gate');
-    const pinInput = document.getElementById('auth-pin-input');
-    const statusMsg = document.getElementById('auth-status-msg');
-    const card = document.querySelector('.auth-gate-card');
-    const btnSaveNewPin = document.getElementById('btn-save-new-pin');
-    const btnLockNow = document.getElementById('btn-lock-atelier-now');
-    const newPinInput = document.getElementById('cfg-new-pin');
 
-    if (!gateOverlay) return;
-
-    // Check if session or local token already authenticated
-    const hasLocal = (typeof localStorage !== 'undefined') && (localStorage.getItem('auracraft_auth_token') === 'authenticated');
-    const hasSession = (typeof sessionStorage !== 'undefined') && (sessionStorage.getItem('auracraft_session_token') === 'authenticated');
-    const isAuthed = hasLocal || hasSession;
-
-    if (isAuthed) {
-      gateOverlay.style.display = 'none';
-    } else {
-      gateOverlay.style.display = 'flex';
-      if (pinInput && typeof pinInput.focus === 'function') setTimeout(() => pinInput.focus(), 200);
-    }
-
-    const updateDots = () => {
-      const dots = document.querySelectorAll('#auth-pin-display .pin-dot');
-      dots.forEach((dot, idx) => {
-        if (idx < this.authPinBuffer.length) {
-          dot.classList.add('filled');
-        } else {
-          dot.classList.remove('filled');
-        }
-      });
-    };
-
-    const attemptUnlock = () => {
-      const currentConfigPin = (typeof localStorage !== 'undefined' && localStorage.getItem('auracraft_custom_pin')) || '3868';
-      const entered = this.authPinBuffer || (pinInput ? pinInput.value : '');
-
-      if (!entered) return;
-
-      if (entered === currentConfigPin) {
-        if (statusMsg) {
-          statusMsg.className = 'auth-status-msg success';
-          statusMsg.textContent = 'Passcode accepted. Welcome to Atelier!';
-        }
-
-        const remember = document.getElementById('auth-remember-session');
-        if (remember && remember.checked && typeof localStorage !== 'undefined') {
-          localStorage.setItem('auracraft_auth_token', 'authenticated');
-        } else if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem('auracraft_session_token', 'authenticated');
-        }
-
-        setTimeout(() => {
-          gateOverlay.style.opacity = '0';
-          setTimeout(() => {
-            gateOverlay.style.display = 'none';
-            gateOverlay.style.opacity = '1';
-            this.authPinBuffer = '';
-            updateDots();
-          }, 300);
-        }, 200);
-      } else {
-        if (card) {
-          card.classList.remove('shake');
-          void card.offsetWidth; // trigger reflow
-          card.classList.add('shake');
-        }
-        if (statusMsg) {
-          statusMsg.className = 'auth-status-msg error';
-          statusMsg.textContent = 'Incorrect PIN. Please try again.';
-        }
-        this.authPinBuffer = '';
-        if (pinInput) pinInput.value = '';
-        updateDots();
-      }
-    };
-
-    // Numpad button clicks
-    document.querySelectorAll('#auth-numpad .numpad-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.key;
-        if (key === 'clear') {
-          this.authPinBuffer = '';
-          if (pinInput) pinInput.value = '';
-          updateDots();
-        } else if (key === 'enter') {
-          attemptUnlock();
-        } else if (key && this.authPinBuffer.length < 6) {
-          this.authPinBuffer += key;
-          if (pinInput) pinInput.value = this.authPinBuffer;
-          updateDots();
-          if (this.authPinBuffer.length === 4) {
-            setTimeout(attemptUnlock, 120);
-          }
-        }
-      });
-    });
-
-    // Keyboard listener for lock screen
-    window.addEventListener('keydown', (e) => {
-      if (gateOverlay.style.display === 'none') return;
-      if (e.key >= '0' && e.key <= '9') {
-        if (this.authPinBuffer.length < 6) {
-          this.authPinBuffer += e.key;
-          if (pinInput) pinInput.value = this.authPinBuffer;
-          updateDots();
-          if (this.authPinBuffer.length === 4) {
-            setTimeout(attemptUnlock, 120);
-          }
-        }
-      } else if (e.key === 'Backspace') {
-        this.authPinBuffer = this.authPinBuffer.slice(0, -1);
-        if (pinInput) pinInput.value = this.authPinBuffer;
-        updateDots();
-      } else if (e.key === 'Enter') {
-        attemptUnlock();
-      }
-    });
-
-    // Settings PIN management
-    if (btnSaveNewPin && newPinInput) {
-      btnSaveNewPin.addEventListener('click', () => {
-        const val = (newPinInput.value || '').trim();
-        if (/^\d{4,6}$/.test(val)) {
-          if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('auracraft_custom_pin', val);
-          }
-          newPinInput.value = '';
-          this.showToast(`Atelier PIN updated successfully to ${val}!`, 'success');
-        } else {
-          this.showToast('Please enter a 4 to 6 digit numeric PIN.', 'error');
-        }
-      });
-    }
-
-    if (btnLockNow) {
-      btnLockNow.addEventListener('click', () => {
-        if (typeof localStorage !== 'undefined') localStorage.removeItem('auracraft_auth_token');
-        if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('auracraft_session_token');
-        this.authPinBuffer = '';
-        if (pinInput) pinInput.value = '';
-        updateDots();
-        if (statusMsg) {
-          statusMsg.className = 'auth-status-msg';
-          statusMsg.textContent = 'Enter Atelier PIN to access studio';
-        }
-        gateOverlay.style.display = 'flex';
-        gateOverlay.style.opacity = '1';
-        this.showToast('Atelier locked securely.', 'info');
-      });
-    }
-  }
 }
 
 // Instantiate on DOM load
