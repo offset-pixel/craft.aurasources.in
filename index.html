@@ -10,18 +10,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="styles.css">
+  <!-- Firebase Compat SDKs for Realtime Database & User Auth -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <!-- jsPDF & AutoTable for Client-Side Bulk PDF Catalog Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
   <!-- Atelier Access Security Gate (Client-Side Passcode Protection) -->
   <div class="auth-gate-overlay" id="atelier-auth-gate" style="display: none;">
     <div class="auth-gate-card">
-      <div class="auth-gate-brand">
-        <div class="auth-brand-icon">
-          <i class="fa-solid fa-gem"></i>
-        </div>
-        <h2>AuraCraft Atelier</h2>
-        <p class="auth-subtitle">Private Manufacturing & Pricing Studio</p>
+      <div class="auth-brand-icon">
+        <i class="fa-solid fa-gem"></i>
       </div>
+      <h2>AuraCraft Atelier</h2>
+      <p class="auth-subtitle">Private Manufacturing & Pricing Studio</p>
 
       <div class="auth-pin-display" id="auth-pin-display">
         <div class="pin-dot" data-index="0"></div>
@@ -69,7 +74,7 @@
         </div>
         <div class="brand-text">
           <h1>AuraCraft</h1>
-          <span class="tagline">Interactive Gemstone Bracelet Studio</span>
+          <span class="tagline">Interactive Gemstone Studio</span>
         </div>
       </div>
 
@@ -81,23 +86,57 @@
         <button class="nav-tab-btn" data-view="collections" id="nav-btn-collections" title="Saved Bracelet Collections Gallery (2)">
           <i class="fa-solid fa-folder-open"></i> <span>Collections (<span id="nav-collection-count">0</span>)</span>
         </button>
-        <button class="nav-tab-btn" data-view="settings" id="nav-btn-settings" title="Commercial Pricing & Backup Hub (3)">
+        <button class="nav-tab-btn" data-view="settings" id="nav-btn-settings" title="Commercial Pricing & Cloud Sync (3)">
           <i class="fa-solid fa-sliders"></i> <span>Settings</span>
         </button>
       </nav>
 
+      <!-- Active Project & Overwrite Protection Header Banner -->
+      <div class="header-project-banner" id="header-project-banner">
+        <div class="project-status-pill" id="project-status-pill">
+          <span class="status-indicator-dot" id="status-indicator-dot"></span>
+          <span class="project-state-text" id="project-state-text">New Untitled Project</span>
+        </div>
+        <div class="header-sku-chip" id="header-sku-chip" title="Current Active SKU">AC-CIT-AME-22B-8MM-001</div>
+      </div>
 
-
-      <!-- Clean Header Quick Actions -->
+      <!-- Clean Header Quick Actions & Collaboration -->
       <div class="header-actions">
-        <button id="btn-open-share-modal" class="action-btn" title="Share Bracelet Recipe URL (Dialog)">
-          <i class="fa-solid fa-share-nodes"></i> <span>Share</span>
+        <!-- New Project Action -->
+        <button id="btn-header-new-project" class="action-btn header-new-btn" title="Create New Bracelet Project (Guarded from overwrite)">
+          <i class="fa-solid fa-plus"></i> <span>New Project</span>
         </button>
-        <button id="btn-export-png" class="action-btn primary" title="Export High-Definition Render (Dialog)">
-          <i class="fa-solid fa-camera-retro"></i> <span>Export HD</span>
+
+        <!-- Save Dropdown Action Group -->
+        <div class="save-actions-group">
+          <button id="btn-header-save-changes" class="action-btn gold" title="Save changes to current project (Ctrl+S)">
+            <i class="fa-solid fa-floppy-disk"></i> <span id="header-save-btn-label">Save Changes</span>
+          </button>
+          <button id="btn-header-save-as-new" class="action-btn save-as-btn" title="Save as a new copy / variant without overwriting">
+            <i class="fa-solid fa-copy"></i> <span>Save As New</span>
+          </button>
+        </div>
+
+        <!-- Realtime Database Cloud Sync Status Indicator -->
+        <div class="cloud-sync-badge synced" id="cloud-sync-badge" title="Firebase Realtime Database Sync Status">
+          <i class="fa-solid fa-cloud" id="cloud-sync-icon"></i>
+          <span id="cloud-sync-label">Cloud Synced</span>
+        </div>
+
+        <!-- Team & User Profile Trigger -->
+        <button id="btn-team-profile" class="action-btn team-user-btn" title="Team Access & User Authentication">
+          <div class="user-avatar-circle" id="header-user-avatar"><i class="fa-solid fa-user"></i></div>
+          <span id="header-user-name">Team User</span>
         </button>
-        <button id="btn-header-print-specs" class="action-btn gold" title="Print Manufacturing Specification Sheet (Ctrl+P)">
-          <i class="fa-solid fa-print"></i> <span>Print Spec</span>
+
+        <button id="btn-open-share-modal" class="action-btn icon-only-btn" title="Share Bracelet Recipe URL (Dialog)">
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+        <button id="btn-export-png" class="action-btn icon-only-btn" title="Export High-Definition Render (Dialog)">
+          <i class="fa-solid fa-camera-retro"></i>
+        </button>
+        <button id="btn-header-print-specs" class="action-btn icon-only-btn gold" title="Print Manufacturing Specification Sheet (Ctrl+P)">
+          <i class="fa-solid fa-print"></i>
         </button>
       </div>
     </header>
@@ -407,14 +446,29 @@
                   </select>
                 </div>
               </div>
+ 
+               <!-- Disambiguated Save & New Actions (Guards against accidental overwriting) -->
+               <div class="sidebar-save-actions" style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
+                 <button class="action-btn gold full-width" id="btn-save-to-collection" style="width: 100%; justify-content: center;">
+                   <i class="fa-solid fa-floppy-disk"></i> <span id="sidebar-save-btn-label">Save Changes (Ctrl+S)</span>
+                 </button>
+                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                   <button class="action-btn" id="btn-save-as-new-sidebar" title="Create a new copy / variant with incremented SKU">
+                     <i class="fa-solid fa-copy"></i> <span>Save As New</span>
+                   </button>
+                   <button class="action-btn header-new-btn" id="btn-new-project-sidebar" title="Start a fresh blank bracelet">
+                     <i class="fa-solid fa-plus"></i> <span>New Project</span>
+                   </button>
+                 </div>
+               </div>
 
-              <!-- Primary Gold Save Button -->
-              <button class="action-btn gold full-width" id="btn-save-to-collection" style="margin-top: 14px; width: 100%; justify-content: center;">
-                <i class="fa-solid fa-bookmark"></i> <span>Save to Collection (Ctrl+S)</span>
-              </button>
-            </div>
-          </div>
-        </div>
+               <!-- Creator / Editor Attribution Stamp -->
+               <div class="project-audit-stamp" id="project-audit-stamp">
+                 <i class="fa-solid fa-user-pen"></i> <span id="project-audit-text">New Untitled Project • Unsaved</span>
+               </div>
+             </div>
+           </div>
+         </div>
 
         <!-- Subtab Pane 2: Combined BOM & Cost Waterfall Breakdown -->
         <div class="subtab-pane" id="pane-details-bom" style="display: none;">
@@ -541,6 +595,9 @@
             </div>
           </div>
           <div class="view-header-actions">
+            <button class="action-btn gold" id="btn-full-col-export-pdf" title="Compile and download all saved designs in a multi-page PDF catalog">
+              <i class="fa-solid fa-file-pdf"></i> <span>Export All (PDF Catalog)</span>
+            </button>
             <button class="action-btn" id="btn-full-col-save-current">
               <i class="fa-solid fa-bookmark"></i> <span>Save Current Design</span>
             </button>
@@ -1211,7 +1268,10 @@
         </div>
 
         <div class="modal-footer" style="justify-content: space-between;">
-          <button class="action-btn" id="btn-open-backup-modal"><i class="fa-solid fa-cloud-arrow-up"></i> Backup / Restore JSON</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="action-btn" id="btn-open-backup-modal"><i class="fa-solid fa-cloud-arrow-up"></i> Backup / Restore JSON</button>
+            <button class="action-btn gold" id="btn-modal-export-pdf" title="Export entire saved collection as a PDF catalog"><i class="fa-solid fa-file-pdf"></i> Export Catalog (PDF)</button>
+          </div>
           <div style="display: flex; gap: 8px;">
             <button class="action-btn gold" id="btn-modal-save-current"><i class="fa-solid fa-plus"></i> Save Current Design</button>
             <button class="action-btn primary" id="btn-done-collections-modal">Close</button>
@@ -1363,6 +1423,197 @@
         <div class="modal-footer">
           <button class="action-btn primary" id="btn-execute-restore" style="display: none;"><i class="fa-solid fa-check"></i> Restore Now</button>
           <button class="action-btn" id="btn-cancel-backup-modal">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Collaboration & Firebase Auth Modal -->
+    <div class="modal-backdrop" id="team-auth-modal" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i class="fa-solid fa-users-gear"></i>
+            <h3>Team & Cloud Sync Hub</h3>
+          </div>
+          <button class="close-modal-btn" id="btn-close-team-modal"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <!-- Active Authenticated User Profile -->
+          <div class="team-profile-card" id="team-user-logged-in-box" style="display: none;">
+            <div class="team-profile-header">
+              <div class="user-avatar-large" id="modal-user-avatar"><i class="fa-solid fa-user-check"></i></div>
+              <div class="team-profile-info">
+                <h4 id="modal-user-name">Alex Designer</h4>
+                <p id="modal-user-email">alex@aurasources.in</p>
+                <span class="badge gold" id="modal-user-role"><i class="fa-solid fa-shield-halved"></i> Team Member</span>
+              </div>
+            </div>
+            
+            <div class="team-sync-stats">
+              <div class="sync-stat-item">
+                <span class="stat-lbl">Shared Catalog Sync</span>
+                <strong class="stat-val text-green" id="modal-sync-status-text"><i class="fa-solid fa-circle-check"></i> Connected Live</strong>
+              </div>
+              <div class="sync-stat-item">
+                <span class="stat-lbl">Realtime Database</span>
+                <strong class="stat-val" id="modal-db-path-text">team_catalog</strong>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px; display: flex; gap: 8px;">
+              <button class="action-btn danger full-width" id="btn-auth-signout" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out of Team
+              </button>
+            </div>
+          </div>
+
+          <!-- Auth Login / Sign-up Forms -->
+          <div id="team-auth-login-box">
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 14px;">
+              Sign in with your team credentials to sync bracelet projects and commercial pricing live across all studio users and devices.
+            </p>
+
+            <button class="action-btn gold full-width" id="btn-auth-google" style="width: 100%; justify-content: center; margin-bottom: 14px; padding: 10px;">
+              <i class="fa-brands fa-google"></i> <span>Sign in with Google</span>
+            </button>
+
+            <div class="auth-separator"><span>OR EMAIL</span></div>
+
+            <div class="meta-field" style="margin-top: 10px;">
+              <label>Team Member Name</label>
+              <input type="text" id="auth-display-name-input" placeholder="e.g. Krunal / Artisan Name">
+            </div>
+
+            <div class="meta-field">
+              <label>Email Address</label>
+              <input type="email" id="auth-email-input" placeholder="artisan@aurasources.in">
+            </div>
+
+            <div class="meta-field">
+              <label>Password</label>
+              <input type="password" id="auth-password-input" placeholder="••••••••">
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 14px;">
+              <button class="action-btn primary" id="btn-auth-email-signin" style="flex: 1; justify-content: center;">
+                <i class="fa-solid fa-right-to-bracket"></i> Sign In
+              </button>
+              <button class="action-btn" id="btn-auth-email-signup" style="flex: 1; justify-content: center;">
+                <i class="fa-solid fa-user-plus"></i> Register
+              </button>
+            </div>
+
+            <button class="action-btn full-width" id="btn-auth-guest-mode" style="width: 100%; justify-content: center; margin-top: 10px; opacity: 0.85;">
+              <i class="fa-solid fa-user-secret"></i> Continue as Offline Guest
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn" id="btn-close-team-auth">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unsaved Changes / Overwrite Protection Modal -->
+    <div class="modal-backdrop" id="unsaved-changes-modal" style="display: none;">
+      <div class="modal-card" style="max-width: 440px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b;"></i>
+            <h3>Unsaved Studio Changes</h3>
+          </div>
+          <button class="close-modal-btn" id="btn-close-unsaved-modal"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <p id="unsaved-modal-message" style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
+            You have unsaved changes in <strong id="unsaved-project-title">Current Project</strong>. What would you like to do before proceeding?
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="action-btn gold" id="btn-unsaved-save-and-proceed" style="justify-content: center;">
+              <i class="fa-solid fa-floppy-disk"></i> <span>Save Changes & Proceed</span>
+            </button>
+            <button class="action-btn save-as-btn" id="btn-unsaved-save-as-new" style="justify-content: center;">
+              <i class="fa-solid fa-copy"></i> <span>Save as New Variant Copy</span>
+            </button>
+            <button class="action-btn danger" id="btn-unsaved-discard" style="justify-content: center;">
+              <i class="fa-solid fa-trash-can"></i> <span>Discard Unsaved Changes</span>
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: flex-end;">
+          <button class="action-btn" id="btn-unsaved-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save As New Project / Variant Modal -->
+    <div class="modal-backdrop" id="save-as-new-modal" style="display: none;">
+      <div class="modal-card" style="max-width: 460px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i class="fa-solid fa-copy"></i>
+            <h3>Save As New Project Copy</h3>
+          </div>
+          <button class="close-modal-btn" id="btn-close-save-as-modal"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 14px;">
+            Creates an independent new design in the team catalog with a fresh SKU code and UUID, keeping previous projects safe and untouched.
+          </p>
+
+          <div class="meta-field">
+            <label>New Project Title</label>
+            <input type="text" id="save-as-title-input" placeholder="e.g. Solar Abundance Variant B">
+          </div>
+
+          <div class="meta-field">
+            <label>Generated New SKU</label>
+            <div class="sku-badge" id="save-as-sku-preview">AC-CIT-AME-22B-8MM-002</div>
+          </div>
+
+          <div class="meta-field">
+            <label>Category Intent</label>
+            <select id="save-as-category-select">
+              <option value="wealth">Wealth & Abundance</option>
+              <option value="protection">Protection & Shield</option>
+              <option value="love">Heart & Love</option>
+              <option value="chakra">7-Chakra Balance</option>
+              <option value="clarity">Mind Clarity</option>
+              <option value="royal">Royal Luxury</option>
+              <option value="custom">Custom Bespoke</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: space-between;">
+          <button class="action-btn" id="btn-cancel-save-as">Cancel</button>
+          <button class="action-btn gold" id="btn-confirm-save-as"><i class="fa-solid fa-check"></i> Create & Save Project</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk PDF Collection Catalog Export Progress Modal -->
+    <div class="modal-backdrop" id="pdf-export-modal" style="display: none;">
+      <div class="modal-card" style="max-width: 480px; text-align: center;">
+        <div class="modal-header" style="justify-content: center;">
+          <div class="modal-title">
+            <i class="fa-solid fa-file-pdf" style="color: var(--accent-gold); font-size: 1.4rem;"></i>
+            <h3>Compiling Collection PDF Catalog</h3>
+          </div>
+        </div>
+        <div class="modal-body" style="padding: 24px 20px;">
+          <p id="pdf-progress-status-text" style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Rendering high-definition bracelet spec sheets & gemstone BOMs...
+          </p>
+          <div class="pdf-progress-track" style="background: rgba(255,255,255,0.06); border-radius: 8px; height: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;">
+            <div class="pdf-progress-fill" id="pdf-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #d4af37, #f6e05e); transition: width 0.2s ease;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
+            <span id="pdf-progress-count">0 / 0 Designs</span>
+            <span id="pdf-progress-percent">0%</span>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: center;">
+          <button class="action-btn" id="btn-cancel-pdf-export">Cancel Export</button>
         </div>
       </div>
     </div>

@@ -464,6 +464,1250 @@ const PRESETS = {
 };
 
 // ============================================================================
+// 1.3. Ultra-Realistic Gemstone Texture & Sprite Engine (Nano Banana / AI Photorealism)
+// ============================================================================
+class GemstoneTextureEngine {
+  static textureCache = new Map();
+
+  static clearCache() {
+    GemstoneTextureEngine.textureCache.clear();
+  }
+
+  static getBeadTexture(stone, r, isSelected = false, isHovered = false, glowEnabled = false) {
+    if (!stone) return null;
+    const rKey = Math.round(r * 2);
+    const key = `${stone.id}_${rKey}_${isSelected ? 1 : 0}_${isHovered ? 1 : 0}_${glowEnabled ? 1 : 0}`;
+
+    if (GemstoneTextureEngine.textureCache.has(key)) {
+      return GemstoneTextureEngine.textureCache.get(key);
+    }
+
+    // Generate offscreen high-definition texture canvas
+    const padding = Math.ceil(r * 0.45) + 10;
+    const size = Math.ceil(r * 2 + padding * 2);
+    const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (!canvas || !canvas.getContext) return null;
+
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const cx = size / 2;
+    const cy = size / 2;
+
+    // 1. Aura / Refraction Glow (if enabled)
+    if (glowEnabled) {
+      const glow = ctx.createRadialGradient(cx, cy, r * 0.8, cx, cy, r * 1.35);
+      glow.addColorStop(0, stone.glowColor || 'rgba(201, 169, 110, 0.4)');
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 1.35, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 2. Base Contact Ambient Occlusion Shadow
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx + r * 0.08, cy + r * 0.08, r * 0.98, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fill();
+    ctx.restore();
+
+    // 3. Clipped Sphere for Mineral Material & Deep Subsurface Scattering
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Base Radial Color Gradient
+    const baseGrad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+    baseGrad.addColorStop(0, stone.highlightColor || '#ffffff');
+    baseGrad.addColorStop(0.5, stone.baseColor || '#888888');
+    baseGrad.addColorStop(1, stone.deepColor || '#222222');
+    ctx.fillStyle = baseGrad;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+    // Render Procedural Micro-Mineral Textures
+    GemstoneTextureEngine.renderMineralDetails(ctx, cx, cy, r, stone);
+
+    // Subsurface Scattering (SSS) Internal Glow
+    const isTranslucent = ['gem', 'rose-quartz', 'clear-quartz', 'amber', 'jade', 'precious-emerald', 'precious-ruby', 'precious-sapphire'].includes(stone.type) ||
+      ['citrine', 'amethyst', 'rose-quartz', 'clear-quartz', 'amber', 'emerald', 'ruby', 'blue-sapphire', 'green-aventurine', 'moss-agate'].includes(stone.id);
+    if (isTranslucent) {
+      const sssGrad = ctx.createRadialGradient(cx - r * 0.15, cy - r * 0.15, r * 0.05, cx, cy, r * 0.95);
+      sssGrad.addColorStop(0, stone.highlightColor ? stone.highlightColor + '66' : 'rgba(255, 255, 255, 0.4)');
+      sssGrad.addColorStop(0.45, stone.baseColor ? stone.baseColor + '33' : 'rgba(255, 255, 255, 0.15)');
+      sssGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = sssGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3D Spherical Volume Shading & Ambient Rim Shadow
+    const lightX = cx - r * 0.32;
+    const lightY = cy - r * 0.32;
+    const sphereShade = ctx.createRadialGradient(lightX, lightY, r * 0.08, cx, cy, r);
+    sphereShade.addColorStop(0, 'rgba(255, 255, 255, 0.38)');
+    sphereShade.addColorStop(0.35, 'rgba(255, 255, 255, 0.05)');
+    sphereShade.addColorStop(0.7, 'rgba(0, 0, 0, 0.28)');
+    sphereShade.addColorStop(0.92, 'rgba(0, 0, 0, 0.65)');
+    sphereShade.addColorStop(1, 'rgba(0, 0, 0, 0.88)');
+
+    ctx.fillStyle = sphereShade;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dual-Lobe Specular Highlights: Primary High-Gloss Lobe
+    ctx.beginPath();
+    ctx.ellipse(cx - r * 0.32, cy - r * 0.32, r * 0.26, r * 0.16, -Math.PI / 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.68)';
+    ctx.fill();
+
+    // Pinpoint Specular Caustic Glint
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.28, cy - r * 0.28, r * 0.09, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    // Fresnel Rim Bounce (Bottom-Right)
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.94, Math.PI * 0.15, Math.PI * 0.48);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.lineWidth = r * 0.07;
+    ctx.stroke();
+
+    ctx.restore(); // Exit sphere clipping
+
+    // Selection & Hover Halo Ring
+    if (isSelected || isHovered) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 2.5, 0, Math.PI * 2);
+      ctx.strokeStyle = isSelected ? '#c9a96e' : 'rgba(255, 255, 255, 0.75)';
+      ctx.lineWidth = isSelected ? 2.5 : 1.5;
+      if (isSelected) {
+        ctx.shadowColor = 'rgba(201, 169, 110, 0.85)';
+        ctx.shadowBlur = 8;
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    GemstoneTextureEngine.textureCache.set(key, canvas);
+    return canvas;
+  }
+
+  static renderMineralDetails(ctx, cx, cy, r, stone) {
+    const x = cx;
+    const y = cy;
+    switch (stone.type) {
+      case 'tigereye': {
+        // Silky Chatoyancy Bands with golden shimmer
+        ctx.save();
+        ctx.rotate(0.35);
+        const bandGrad = ctx.createLinearGradient(x - r * 1.2, y - r * 1.2, x + r * 1.2, y + r * 1.2);
+        bandGrad.addColorStop(0, 'rgba(69, 26, 3, 0.95)');
+        bandGrad.addColorStop(0.2, 'rgba(180, 83, 9, 0.85)');
+        bandGrad.addColorStop(0.42, 'rgba(251, 191, 36, 0.95)');
+        bandGrad.addColorStop(0.5, 'rgba(254, 240, 138, 1)');
+        bandGrad.addColorStop(0.58, 'rgba(217, 119, 6, 0.95)');
+        bandGrad.addColorStop(0.8, 'rgba(120, 53, 15, 0.9)');
+        bandGrad.addColorStop(1, 'rgba(69, 26, 3, 0.95)');
+        ctx.fillStyle = bandGrad;
+        ctx.fillRect(x - r * 2, y - r * 2, r * 4, r * 4);
+
+        // Fine chatoyant silk fibers
+        ctx.strokeStyle = 'rgba(254, 240, 138, 0.35)';
+        ctx.lineWidth = 0.8;
+        for (let i = -r * 0.8; i <= r * 0.8; i += r * 0.25) {
+          ctx.beginPath();
+          ctx.moveTo(x + i, y - r);
+          ctx.lineTo(x + i + r * 0.2, y + r);
+          ctx.stroke();
+        }
+        ctx.restore();
+        break;
+      }
+
+      case 'lapis': {
+        // Ultramarine with Calcite Clouds & Golden Pyrite Flecks
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+        ctx.beginPath();
+        ctx.ellipse(x + r * 0.2, y - r * 0.15, r * 0.45, r * 0.18, 0.35, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.85)';
+        const pyritePoints = [
+          [-0.3, -0.2], [0.1, 0.3], [0.35, -0.1], [-0.15, 0.25],
+          [0.2, -0.35], [-0.4, 0.1], [0.0, -0.1], [0.3, 0.2]
+        ];
+        pyritePoints.forEach(([px, py]) => {
+          ctx.beginPath();
+          ctx.arc(x + px * r, y + py * r, r * 0.055, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        break;
+      }
+
+      case 'malachite': {
+        // Concentric Wavy Agate Banding
+        ctx.lineWidth = r * 0.12;
+        const rings = [0.25, 0.45, 0.65, 0.85];
+        rings.forEach((ringR, idx) => {
+          ctx.strokeStyle = idx % 2 === 0 ? 'rgba(6, 78, 59, 0.85)' : 'rgba(52, 211, 153, 0.75)';
+          ctx.beginPath();
+          ctx.arc(x - r * 0.15, y - r * 0.15, r * ringR, 0, Math.PI * 2);
+          ctx.stroke();
+        });
+        break;
+      }
+
+      case 'lava': {
+        // Porous Micro-Cratered Basalt Texture
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+        const pores = [
+          [-0.35, -0.25, 0.1], [0.2, 0.3, 0.12], [-0.1, 0.4, 0.08],
+          [0.35, -0.2, 0.1], [-0.25, 0.15, 0.09], [0.05, -0.3, 0.11]
+        ];
+        pores.forEach(([px, py, pr]) => {
+          ctx.beginPath();
+          ctx.arc(x + px * r, y + py * r, r * pr, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        break;
+      }
+
+      case 'pyrite': {
+        // Metallic Crystalline Cluster Facets
+        ctx.strokeStyle = 'rgba(254, 240, 138, 0.55)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - r * 0.35, y - r * 0.35, r * 0.55, r * 0.55);
+        ctx.strokeRect(x - r * 0.1, y - r * 0.1, r * 0.45, r * 0.45);
+        break;
+      }
+
+      case 'agate': {
+        // Translucent Chalcedony with Dendritic Inclusions
+        ctx.strokeStyle = 'rgba(15, 118, 110, 0.5)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(x - r * 0.4, y + r * 0.4);
+        ctx.quadraticCurveTo(x - r * 0.1, y, x + r * 0.2, y - r * 0.3);
+        ctx.quadraticCurveTo(x + r * 0.3, y + r * 0.2, x + r * 0.5, y + r * 0.1);
+        ctx.stroke();
+        break;
+      }
+
+      default: {
+        // Subtle Crystal Prism / Quartz Internal Facet Lines
+        if (stone.type === 'gem' || stone.id === 'citrine' || stone.id === 'amethyst') {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(x - r * 0.4, y - r * 0.2);
+          ctx.lineTo(x + r * 0.3, y + r * 0.3);
+          ctx.stroke();
+        }
+        break;
+      }
+    }
+  }
+}
+
+// ============================================================================
+// 1.4. Bulk Collection Multi-Page PDF Catalog Exporter
+// ============================================================================
+class PDFCatalogExporter {
+  static isExporting = false;
+  static shouldCancel = false;
+
+  static async exportCollectionPDF(studio, filterCat = 'all', filterStatus = 'all') {
+    if (PDFCatalogExporter.isExporting) return;
+    PDFCatalogExporter.isExporting = true;
+    PDFCatalogExporter.shouldCancel = false;
+
+    // Retrieve all projects
+    let products = StorageManager.getAll();
+    if (filterCat && filterCat !== 'all') {
+      products = products.filter(p => p.category === filterCat);
+    }
+    if (filterStatus && filterStatus !== 'all') {
+      products = products.filter(p => (p.status || 'active') === filterStatus);
+    }
+
+    if (!products || products.length === 0) {
+      studio.showToast('No saved designs found in this collection to export!', 'error');
+      PDFCatalogExporter.isExporting = false;
+      return;
+    }
+
+    if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+      studio.showToast('Loading PDF engine... Please try again in a moment.', 'info');
+      PDFCatalogExporter.isExporting = false;
+      return;
+    }
+
+    const modal = document.getElementById('pdf-export-modal');
+    const statusText = document.getElementById('pdf-progress-status-text');
+    const fillBar = document.getElementById('pdf-progress-fill');
+    const countText = document.getElementById('pdf-progress-count');
+    const percentText = document.getElementById('pdf-progress-percent');
+
+    if (modal) modal.style.display = 'flex';
+    if (fillBar) fillBar.style.width = '0%';
+    if (countText) countText.textContent = `0 / ${products.length} Designs`;
+    if (percentText) percentText.textContent = '0%';
+    if (statusText) statusText.textContent = 'Initializing luxury atelier PDF document...';
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 14;
+      const contentWidth = pageWidth - margin * 2;
+
+      // ==========================================
+      // PAGE 1: COVER PAGE
+      // ==========================================
+      doc.setFillColor(15, 17, 21); // Atelier Deep Charcoal
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      // Top Gold Luxury Bar
+      doc.setFillColor(212, 175, 55); // Gold Accent
+      doc.rect(margin, margin, contentWidth, 3, 'F');
+
+      // Header Brand
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(26);
+      doc.setTextColor(245, 230, 180);
+      doc.text('AURACRAFT ATELIER', pageWidth / 2, 45, { align: 'center' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12);
+      doc.setTextColor(200, 205, 215);
+      doc.text('Fine Gemstone Jewelry & Manufacturing Specifications', pageWidth / 2, 53, { align: 'center' });
+
+      doc.setDrawColor(212, 175, 55);
+      doc.setLineWidth(0.5);
+      doc.line(pageWidth / 2 - 40, 58, pageWidth / 2 + 40, 58);
+
+      // Title Card
+      doc.setFillColor(24, 28, 36);
+      doc.roundedRect(margin, 70, contentWidth, 55, 3, 3, 'F');
+      doc.setDrawColor(50, 56, 70);
+      doc.roundedRect(margin, 70, contentWidth, 55, 3, 3, 'S');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(255, 255, 255);
+      doc.text('MASTER COLLECTION CATALOG', margin + 10, 85);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(160, 168, 184);
+      doc.text(`Compilation of ${products.length} bespoke bracelet creations, recipes, and BOM specifications.`, margin + 10, 93);
+
+      const todayStr = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+      doc.text(`Generated on: ${todayStr}`, margin + 10, 101);
+      doc.text(`Curated by: ${FirebaseManager.currentUser ? FirebaseManager.currentUser.displayName : 'AuraCraft Artisan'}`, margin + 10, 109);
+      doc.text(`Category Scope: ${filterCat.toUpperCase()} • Status Scope: ${filterStatus.toUpperCase()}`, margin + 10, 117);
+
+      // Summary Statistics Cards
+      let totalCollectionMRP = 0;
+      let totalCollectionCost = 0;
+      products.forEach(p => {
+        const pr = p.pricing || PricingEngine.calculate(p.beads);
+        totalCollectionMRP += pr.mrp || 0;
+        totalCollectionCost += pr.finalSellingPrice || 0;
+      });
+
+      const cardW = (contentWidth - 8) / 3;
+      // Card 1: Total Designs
+      doc.setFillColor(32, 38, 48);
+      doc.roundedRect(margin, 135, cardW, 35, 2, 2, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(160, 168, 184);
+      doc.text('TOTAL DESIGNS', margin + cardW / 2, 146, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(255, 255, 255);
+      doc.text(String(products.length), margin + cardW / 2, 160, { align: 'center' });
+
+      // Card 2: Total Cost Valuation
+      doc.setFillColor(32, 38, 48);
+      doc.roundedRect(margin + cardW + 4, 135, cardW, 35, 2, 2, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(160, 168, 184);
+      doc.text('TOTAL SELLING VALUATION', margin + cardW + 4 + cardW / 2, 146, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(212, 175, 55);
+      doc.text(`Rs. ${totalCollectionCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, margin + cardW + 4 + cardW / 2, 160, { align: 'center' });
+
+      // Card 3: Total Retail MRP
+      doc.setFillColor(32, 38, 48);
+      doc.roundedRect(margin + (cardW + 4) * 2, 135, cardW, 35, 2, 2, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(160, 168, 184);
+      doc.text('TOTAL RETAIL MRP', margin + (cardW + 4) * 2 + cardW / 2, 146, { align: 'center' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(163, 230, 53);
+      doc.text(`Rs. ${totalCollectionMRP.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, margin + (cardW + 4) * 2 + cardW / 2, 160, { align: 'center' });
+
+      // Atelier Quality Seal & Assurance
+      doc.setFillColor(24, 28, 36);
+      doc.roundedRect(margin, 180, contentWidth, 75, 3, 3, 'F');
+      doc.setDrawColor(50, 56, 70);
+      doc.roundedRect(margin, 180, contentWidth, 75, 3, 3, 'S');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(212, 175, 55);
+      doc.text('ATELIER QUALITY STANDARDS & SPECIFICATIONS', margin + 10, 194);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(200, 205, 215);
+      const sealNotes = [
+        "• 100% Authentic Natural Gemstones & Grade-A Crystals.",
+        "• Quad-Strand High-Tension German Elastic Cord or Hand-Braided Macrame.",
+        "• Precision-Calibrated Sizing (6mm, 8mm, 10mm, 12mm Standard Spheres).",
+        "• Dynamic Multi-Tier Pricing Architecture (Raw Mineral + Packaging + Logistics + Margin).",
+        "• Verified Craftsmanship with Individual Production SKU & Job Codes."
+      ];
+      sealNotes.forEach((note, nIdx) => {
+        doc.text(note, margin + 10, 205 + nIdx * 8);
+      });
+
+      // Cover Footer
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(120, 128, 144);
+      doc.text('AuraCraft Fine Jewelry Studio • Proprietary Catalog Document • All Rights Reserved', pageWidth / 2, 282, { align: 'center' });
+
+      // ==========================================
+      // PRODUCT PAGES (1 design per page for maximum luxury clarity)
+      // ==========================================
+      const offscreenCanvas = document.createElement('canvas');
+      offscreenCanvas.width = 600;
+      offscreenCanvas.height = 600;
+
+      for (let i = 0; i < products.length; i++) {
+        if (PDFCatalogExporter.shouldCancel) {
+          studio.showToast('PDF Export cancelled.', 'info');
+          if (modal) modal.style.display = 'none';
+          PDFCatalogExporter.isExporting = false;
+          return;
+        }
+
+        const product = products[i];
+        const progress = Math.round(((i + 1) / products.length) * 100);
+        if (fillBar) fillBar.style.width = `${progress}%`;
+        if (countText) countText.textContent = `${i + 1} / ${products.length} Designs`;
+        if (percentText) percentText.textContent = `${progress}%`;
+        if (statusText) statusText.textContent = `Rendering "${product.title}" (${product.sku})...`;
+
+        await new Promise(r => setTimeout(r, 20));
+
+        doc.addPage('a4', 'portrait');
+
+        // Page Header
+        doc.setFillColor(15, 17, 21);
+        doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+        doc.setFillColor(212, 175, 55);
+        doc.rect(margin, margin, contentWidth, 1.5, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(212, 175, 55);
+        doc.text('AURACRAFT COLLECTION SPEC SHEET', margin, margin + 7);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(160, 168, 184);
+        doc.text(`Page ${i + 2} of ${products.length + 1}`, pageWidth - margin, margin + 7, { align: 'right' });
+
+        // Product Header Card
+        doc.setFillColor(24, 28, 36);
+        doc.roundedRect(margin, margin + 11, contentWidth, 22, 2, 2, 'F');
+        doc.setDrawColor(50, 56, 70);
+        doc.roundedRect(margin, margin + 11, contentWidth, 22, 2, 2, 'S');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.setTextColor(255, 255, 255);
+        doc.text(product.title || 'Untitled Bracelet', margin + 6, margin + 20);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(212, 175, 55);
+        doc.text(`SKU: ${product.sku || 'N/A'}`, margin + 6, margin + 28);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(160, 168, 184);
+        doc.text(`Category: ${(product.category || 'wealth').toUpperCase()} • Status: ${(product.status || 'active').toUpperCase()}`, pageWidth - margin - 6, margin + 28, { align: 'right' });
+
+        // Left Column: HD Bracelet Preview Canvas
+        studio.drawBracelet(
+          offscreenCanvas,
+          'dark',
+          product.beads,
+          product.totalBits || product.beads.length,
+          product.beadDiameterMm || 8,
+          product.cordType || 'elastic'
+        );
+        const imgData = offscreenCanvas.toDataURL('image/png');
+        const imgBoxSize = 75;
+        const imgX = margin;
+        const imgY = margin + 38;
+
+        doc.setFillColor(18, 21, 27);
+        doc.roundedRect(imgX, imgY, imgBoxSize, imgBoxSize, 2, 2, 'F');
+        doc.setDrawColor(50, 56, 70);
+        doc.roundedRect(imgX, imgY, imgBoxSize, imgBoxSize, 2, 2, 'S');
+
+        doc.addImage(imgData, 'PNG', imgX + 2, imgY + 2, imgBoxSize - 4, imgBoxSize - 4);
+
+        // Technical Specs under image
+        doc.setFillColor(24, 28, 36);
+        doc.roundedRect(imgX, imgY + imgBoxSize + 4, imgBoxSize, 24, 2, 2, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(212, 175, 55);
+        doc.text('CONSTRUCTION SPECIFICATIONS', imgX + 4, imgY + imgBoxSize + 10);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(200, 205, 215);
+        doc.text(`• Bead Count: ${product.totalBits || product.beads.length} Beads`, imgX + 4, imgY + imgBoxSize + 15);
+        doc.text(`• Bead Diameter: ${product.beadDiameterMm || 8}mm`, imgX + 4, imgY + imgBoxSize + 19);
+        doc.text(`• Cord Type: ${product.cordType || 'elastic'} (~18.5 cm fit)`, imgX + 4, imgY + imgBoxSize + 23);
+
+        // Right Column: BOM Table & Pricing Breakdown
+        const rightX = imgX + imgBoxSize + 6;
+        const rightW = contentWidth - imgBoxSize - 6;
+
+        // Pricing Waterfall Summary Box
+        const pCalc = product.pricing || PricingEngine.calculate(product.beads);
+        doc.setFillColor(24, 28, 36);
+        doc.roundedRect(rightX, imgY, rightW, 46, 2, 2, 'F');
+        doc.setDrawColor(50, 56, 70);
+        doc.roundedRect(rightX, imgY, rightW, 46, 2, 2, 'S');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(212, 175, 55);
+        doc.text('COMMERCIAL PRICING WATERFALL', rightX + 6, imgY + 8);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(180, 188, 200);
+
+        const prCols = [
+          ['Raw Minerals Cost:', `Rs. ${(pCalc.rawGemsCost || 0).toFixed(2)}`],
+          ['Packaging & Base:', `Rs. ${(pCalc.packaging ? pCalc.packaging.subtotal : 50).toFixed(2)}`],
+          ['Insured Logistics:', `Rs. ${(pCalc.logistics ? pCalc.logistics.subtotal : 57).toFixed(2)}`],
+          ['Fixed Overheads:', `Rs. ${(pCalc.overheads ? pCalc.overheads.fixedSubtotal : 160).toFixed(2)}`],
+          ['Atelier Margin:', `Rs. ${(pCalc.margin ? pCalc.margin.targetProfit : 200).toFixed(2)}`]
+        ];
+
+        prCols.forEach((row, rIdx) => {
+          const rowY = imgY + 15 + rIdx * 5.5;
+          doc.text(row[0], rightX + 6, rowY);
+          doc.text(row[1], rightX + rightW - 6, rowY, { align: 'right' });
+        });
+
+        // Highlights for Selling Price & MRP
+        doc.setFillColor(32, 38, 48);
+        doc.roundedRect(rightX, imgY + 49, rightW, 20, 2, 2, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(255, 255, 255);
+        doc.text('FINAL SELLING PRICE:', rightX + 6, imgY + 57);
+        doc.setTextColor(212, 175, 55);
+        doc.text(`Rs. ${(pCalc.finalSellingPrice || 0).toFixed(2)}`, rightX + rightW - 6, imgY + 57, { align: 'right' });
+
+        doc.setTextColor(255, 255, 255);
+        doc.text('RECOMMENDED MRP:', rightX + 6, imgY + 64);
+        doc.setTextColor(163, 230, 53);
+        doc.text(`Rs. ${(pCalc.mrp || 0).toFixed(2)}`, rightX + rightW - 6, imgY + 64, { align: 'right' });
+
+        // BOM Table Section
+        const bomTableY = imgY + imgBoxSize + 32;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(212, 175, 55);
+        doc.text('BILL OF MATERIALS (BOM) & MINERAL BREAKDOWN', margin, bomTableY);
+
+        // Compute distinct stone counts
+        const stoneMap = {};
+        product.beads.forEach(b => {
+          stoneMap[b] = (stoneMap[b] || 0) + 1;
+        });
+
+        const tableBody = Object.keys(stoneMap).map(sId => {
+          const st = STONES_DB.find(s => s.id === sId) || { name: sId, category: 'Crystals', chakra: 'General' };
+          const rate = PricingEngine.getStoneRate(sId);
+          const count = stoneMap[sId];
+          return [
+            st.name,
+            `${product.beadDiameterMm || 8}mm`,
+            st.category || 'Crystals',
+            String(count),
+            `Rs. ${rate.toFixed(2)}`,
+            `Rs. ${(rate * count).toFixed(2)}`
+          ];
+        });
+
+        if (typeof doc.autoTable === 'function') {
+          doc.autoTable({
+            startY: bomTableY + 4,
+            margin: { left: margin, right: margin },
+            head: [['Gemstone', 'Size', 'Category', 'Qty', 'Unit Rate', 'Line Total']],
+            body: tableBody,
+            theme: 'plain',
+            styles: {
+              fontSize: 7.5,
+              textColor: [220, 225, 235],
+              cellPadding: 2,
+              fillColor: [24, 28, 36]
+            },
+            headStyles: {
+              fillColor: [32, 38, 48],
+              textColor: [212, 175, 55],
+              fontStyle: 'bold'
+            },
+            alternateRowStyles: {
+              fillColor: [20, 24, 30]
+            }
+          });
+        }
+
+        // Footer Barcode Stamp
+        const footerY = pageHeight - margin - 12;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(200, 205, 215);
+        doc.text(`Manufacturing Job ID: AC-JOB-${(product.sku || '001').replace(/[^A-Z0-9]/gi, '').slice(-8)}`, margin, footerY);
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(7);
+        doc.setTextColor(120, 128, 144);
+        doc.text('AuraCraft Fine Jewelry Studio • Quality Verified & Hand-Inspected', pageWidth - margin, footerY, { align: 'right' });
+      }
+
+      // Save PDF
+      const filename = `AuraSources_Collection_Catalog_${new Date().toISOString().slice(0, 10)}.pdf`;
+      doc.save(filename);
+
+      if (modal) modal.style.display = 'none';
+      studio.showToast(`Successfully downloaded "${filename}"!`, 'success');
+    } catch (err) {
+      console.error('PDF Generation Error:', err);
+      studio.showToast(`PDF Export failed: ${err.message}`, 'error');
+      if (modal) modal.style.display = 'none';
+    } finally {
+      PDFCatalogExporter.isExporting = false;
+    }
+  }
+
+  static async exportSingleProjectPDF(studio, projectData = null) {
+    if (typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) {
+      studio.showToast('Loading PDF engine... Please try again in a moment.', 'info');
+      return;
+    }
+
+    const product = projectData || {
+      title: studio.product.title || 'Custom AuraCraft Bracelet',
+      sku: studio.product.sku || 'AC-CUSTOM-001',
+      category: studio.product.category || 'wealth',
+      status: studio.product.status || 'active',
+      beads: [...studio.beads],
+      totalBits: studio.totalBits || studio.beads.length,
+      beadDiameterMm: studio.beadDiameterMm || 8,
+      cordType: studio.cordType || 'elastic',
+      pricing: studio.pricing || PricingEngine.calculate(studio.beads),
+      createdAt: studio.product.createdAt || new Date().toISOString()
+    };
+
+    studio.showToast(`Compiling luxury PDF spec sheet for "${product.title}"...`, 'info');
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 14;
+      const contentWidth = pageWidth - margin * 2;
+
+      // Page Background
+      doc.setFillColor(15, 17, 21); // Atelier Deep Charcoal
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      // Top Gold Luxury Bar
+      doc.setFillColor(212, 175, 55); // Gold Accent
+      doc.rect(margin, margin, contentWidth, 2, 'F');
+
+      // Header Brand
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(15);
+      doc.setTextColor(245, 230, 180);
+      doc.text('AURACRAFT ATELIER', margin, margin + 8);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(200, 205, 215);
+      doc.text('Bespoke Manufacturing & Quality Specification Document', margin, margin + 13);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(212, 175, 55);
+      doc.text(`DATE: ${new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}`, pageWidth - margin, margin + 8, { align: 'right' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(160, 168, 184);
+      doc.text(`JOB ID: AC-JOB-${(product.sku || '001').replace(/[^A-Z0-9]/gi, '').slice(-8)}`, pageWidth - margin, margin + 13, { align: 'right' });
+
+      // Product Title Card
+      const cardY = margin + 17;
+      doc.setFillColor(24, 28, 36);
+      doc.roundedRect(margin, cardY, contentWidth, 20, 2, 2, 'F');
+      doc.setDrawColor(50, 56, 70);
+      doc.roundedRect(margin, cardY, contentWidth, 20, 2, 2, 'S');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(255, 255, 255);
+      doc.text(product.title || 'Untitled Bracelet', margin + 6, cardY + 8);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(212, 175, 55);
+      doc.text(`SKU: ${product.sku || 'N/A'}`, margin + 6, cardY + 15);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(160, 168, 184);
+      doc.text(`Category: ${(product.category || 'wealth').toUpperCase()} • Status: ${(product.status || 'active').toUpperCase()}`, pageWidth - margin - 6, cardY + 15, { align: 'right' });
+
+      // Left Column: HD Bracelet Preview Canvas
+      const offscreenCanvas = document.createElement('canvas');
+      offscreenCanvas.width = 600;
+      offscreenCanvas.height = 600;
+
+      studio.drawBracelet(
+        offscreenCanvas,
+        'dark',
+        product.beads,
+        product.totalBits || product.beads.length,
+        product.beadDiameterMm || 8,
+        product.cordType || 'elastic'
+      );
+      const imgData = offscreenCanvas.toDataURL('image/png');
+      const imgBoxSize = 75;
+      const imgX = margin;
+      const imgY = cardY + 24;
+
+      doc.setFillColor(18, 21, 27);
+      doc.roundedRect(imgX, imgY, imgBoxSize, imgBoxSize, 2, 2, 'F');
+      doc.setDrawColor(50, 56, 70);
+      doc.roundedRect(imgX, imgY, imgBoxSize, imgBoxSize, 2, 2, 'S');
+
+      doc.addImage(imgData, 'PNG', imgX + 2, imgY + 2, imgBoxSize - 4, imgBoxSize - 4);
+
+      // Construction Specs under image
+      doc.setFillColor(24, 28, 36);
+      doc.roundedRect(imgX, imgY + imgBoxSize + 4, imgBoxSize, 25, 2, 2, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(212, 175, 55);
+      doc.text('CONSTRUCTION SPECIFICATIONS', imgX + 4, imgY + imgBoxSize + 10);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(200, 205, 215);
+      doc.text(`• Bead Count: ${product.totalBits || product.beads.length} Beads`, imgX + 4, imgY + imgBoxSize + 15);
+      doc.text(`• Bead Diameter: ${product.beadDiameterMm || 8}mm`, imgX + 4, imgY + imgBoxSize + 19);
+      doc.text(`• Cord Type: ${product.cordType || 'elastic'} (~18.5 cm fit)`, imgX + 4, imgY + imgBoxSize + 23);
+
+      // Right Column: Commercial Pricing Waterfall
+      const rightX = imgX + imgBoxSize + 6;
+      const rightW = contentWidth - imgBoxSize - 6;
+      const pCalc = product.pricing || PricingEngine.calculate(product.beads);
+
+      doc.setFillColor(24, 28, 36);
+      doc.roundedRect(rightX, imgY, rightW, 52, 2, 2, 'F');
+      doc.setDrawColor(50, 56, 70);
+      doc.roundedRect(rightX, imgY, rightW, 52, 2, 2, 'S');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(212, 175, 55);
+      doc.text('COMMERCIAL PRICING WATERFALL', rightX + 6, imgY + 8);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(180, 188, 200);
+
+      const prCols = [
+        ['Raw Minerals Cost:', `Rs. ${(pCalc.rawGemsCost || 0).toFixed(2)}`],
+        ['Base & Packaging:', `Rs. ${(pCalc.packaging ? pCalc.packaging.subtotal : 50).toFixed(2)}`],
+        ['Insured Logistics:', `Rs. ${(pCalc.logistics ? pCalc.logistics.subtotal : 57).toFixed(2)}`],
+        ['Fixed Overheads:', `Rs. ${(pCalc.overheads ? pCalc.overheads.fixedSubtotal : 160).toFixed(2)}`],
+        ['Atelier Margin:', `Rs. ${(pCalc.margin ? pCalc.margin.targetProfit : 200).toFixed(2)}`],
+        ['10% MRP Discount Allowance:', `Rs. ${(pCalc.overheads ? pCalc.overheads.discountAmount : 75).toFixed(2)}`]
+      ];
+
+      prCols.forEach((row, rIdx) => {
+        const rowY = imgY + 15 + rIdx * 5.2;
+        doc.text(row[0], rightX + 6, rowY);
+        doc.text(row[1], rightX + rightW - 6, rowY, { align: 'right' });
+      });
+
+      // Highlight Box for Selling Price & MRP
+      doc.setFillColor(32, 38, 48);
+      doc.roundedRect(rightX, imgY + 56, rightW, 23, 2, 2, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text('FINAL SELLING PRICE:', rightX + 6, imgY + 65);
+      doc.setTextColor(212, 175, 55);
+      doc.text(`Rs. ${(pCalc.finalSellingPrice || 0).toFixed(2)}`, rightX + rightW - 6, imgY + 65, { align: 'right' });
+
+      doc.setTextColor(255, 255, 255);
+      doc.text('RECOMMENDED MRP:', rightX + 6, imgY + 73);
+      doc.setTextColor(163, 230, 53);
+      doc.text(`Rs. ${(pCalc.mrp || 0).toFixed(2)}`, rightX + rightW - 6, imgY + 73, { align: 'right' });
+
+      // BOM Table Section
+      const bomTableY = imgY + imgBoxSize + 34;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(212, 175, 55);
+      doc.text('1. BILL OF MATERIALS (BOM) & MINERAL BREAKDOWN', margin, bomTableY);
+
+      // Compute distinct stone counts
+      const stoneMap = {};
+      product.beads.forEach(b => {
+        stoneMap[b] = (stoneMap[b] || 0) + 1;
+      });
+
+      const tableBody = Object.keys(stoneMap).map(sId => {
+        const st = STONES_DB.find(s => s.id === sId) || { name: sId, category: 'Crystals', chakra: 'General' };
+        const rate = PricingEngine.getStoneRate(sId);
+        const count = stoneMap[sId];
+        return [
+          st.name,
+          `${product.beadDiameterMm || 8}mm`,
+          st.category || 'Crystals',
+          String(count),
+          `Rs. ${rate.toFixed(2)}`,
+          `Rs. ${(rate * count).toFixed(2)}`
+        ];
+      });
+
+      let finalTableY = bomTableY + 35;
+      if (typeof doc.autoTable === 'function') {
+        doc.autoTable({
+          startY: bomTableY + 4,
+          margin: { left: margin, right: margin },
+          head: [['Gemstone', 'Size', 'Category', 'Qty', 'Unit Rate', 'Line Total']],
+          body: tableBody,
+          theme: 'plain',
+          styles: {
+            fontSize: 7.5,
+            textColor: [220, 225, 235],
+            cellPadding: 2,
+            fillColor: [24, 28, 36]
+          },
+          headStyles: {
+            fillColor: [32, 38, 48],
+            textColor: [212, 175, 55],
+            fontStyle: 'bold'
+          },
+          alternateRowStyles: {
+            fillColor: [20, 24, 30]
+          }
+        });
+        if (doc.lastAutoTable && doc.lastAutoTable.finalY) {
+          finalTableY = doc.lastAutoTable.finalY + 6;
+        }
+      }
+
+      // Section: Quality Assurance & Sign-off Box
+      const qcY = Math.min(finalTableY, pageHeight - margin - 38);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(212, 175, 55);
+      doc.text('2. QUALITY ASSURANCE & ARTISAN SIGN-OFF', margin, qcY);
+
+      doc.setFillColor(24, 28, 36);
+      doc.roundedRect(margin, qcY + 3, contentWidth, 24, 2, 2, 'F');
+      doc.setDrawColor(50, 56, 70);
+      doc.roundedRect(margin, qcY + 3, contentWidth, 24, 2, 2, 'S');
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(200, 205, 215);
+      doc.text('[X] 100% Genuine Natural Minerals (No synthetic dyes)', margin + 6, qcY + 10);
+      doc.text('[X] Elastic Tension Calibration (4x stretch verified)', margin + 6, qcY + 15);
+      doc.text('[X] Triple-Knot Bond & Velvet Box Sealed', margin + 6, qcY + 20);
+
+      const signX = pageWidth / 2 + 10;
+      doc.text('Master Artisan Signature: _______________________', signX, qcY + 12);
+      doc.text('Quality Inspector & Date:  _______________________', signX, qcY + 20);
+
+      // Footer
+      const footerY = pageHeight - margin - 4;
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(7.5);
+      doc.setTextColor(120, 128, 144);
+      doc.text('AuraCraft Fine Jewelry Studio • Proprietary Manufacturing Specification • All Rights Reserved', pageWidth / 2, footerY, { align: 'center' });
+
+      const safeSku = (product.sku || 'design').replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `AuraCraft_SpecSheet_${safeSku}.pdf`;
+      doc.save(filename);
+
+      studio.showToast(`Downloaded "${filename}"!`, 'success');
+    } catch (err) {
+      console.error('Single PDF Export Error:', err);
+      studio.showToast(`PDF Export failed: ${err.message}`, 'error');
+    }
+  }
+
+  static cancel() {
+    PDFCatalogExporter.shouldCancel = true;
+    const modal = document.getElementById('pdf-export-modal');
+    if (modal) modal.style.display = 'none';
+  }
+}
+
+// ============================================================================
+// 1.5. Firebase Realtime Database & Team Collaboration Engine
+// ============================================================================
+class FirebaseManager {
+  static currentUser = null;
+  static isOnline = navigator.onLine !== undefined ? navigator.onLine : true;
+  static isSyncing = false;
+  static isInitialized = false;
+  static db = null;
+  static auth = null;
+  static studioRef = null;
+
+  static DEFAULT_CONFIG = {
+    apiKey: "AIzaSyChCHqNXWDIzzX-NDfWOaiJUSRlBvcY1CE",
+    authDomain: "aura-sources.firebaseapp.com",
+    projectId: "aura-sources",
+    storageBucket: "aura-sources.firebasestorage.app",
+    messagingSenderId: "177756485935",
+    appId: "1:177756485935:web:439cc526f827990e5c89da",
+    measurementId: "G-C564649QCX",
+    databaseURL: "https://aura-sources-default-rtdb.asia-southeast1.firebasedatabase.app"
+
+  };
+
+  static init(studio) {
+    FirebaseManager.studioRef = studio;
+
+    // Listen to network status
+    window.addEventListener('online', () => {
+      FirebaseManager.isOnline = true;
+      FirebaseManager.updateSyncStatusBadge('synced', 'Cloud Synced');
+    });
+    window.addEventListener('offline', () => {
+      FirebaseManager.isOnline = false;
+      FirebaseManager.updateSyncStatusBadge('offline', 'Offline (Local)');
+    });
+
+    // Check if Firebase SDK is loaded on page
+    if (typeof firebase !== 'undefined') {
+      try {
+        if (!firebase.apps || firebase.apps.length === 0) {
+          firebase.initializeApp(FirebaseManager.DEFAULT_CONFIG);
+        }
+        FirebaseManager.auth = firebase.auth();
+        FirebaseManager.db = firebase.database();
+        FirebaseManager.isInitialized = true;
+
+        // Auth state listener
+        FirebaseManager.auth.onAuthStateChanged(async (user) => {
+          if (user) {
+            FirebaseManager.currentUser = {
+              uid: user.uid,
+              displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Team Artisan'),
+              email: user.email || 'guest@aurasources.in',
+              photoURL: user.photoURL || null,
+              isAnonymous: user.isAnonymous
+            };
+            // Sync user data to realtime database
+            await FirebaseManager.pushUserProfile(FirebaseManager.currentUser);
+          } else {
+            // Restore local session or create default team profile
+            const savedUser = localStorage.getItem('auracraft_team_user');
+            if (savedUser) {
+              try { FirebaseManager.currentUser = JSON.parse(savedUser); } catch (e) { }
+            }
+            if (!FirebaseManager.currentUser) {
+              FirebaseManager.currentUser = {
+                uid: 'artisan_' + Math.random().toString(36).substr(2, 6),
+                displayName: 'Krunal (Artisan)',
+                email: 'artisan@aurasources.in',
+                isAnonymous: true
+              };
+            }
+            // Auto sign in anonymously to obtain a real Firebase Auth token for Realtime DB security rules
+            try {
+              FirebaseManager.auth.signInAnonymously().catch(e => {
+                console.warn('Anonymous sign-in skipped (Enable Anonymous sign-in in Firebase Auth console if needed):', e.message);
+              });
+            } catch (authErr) {
+              console.warn('Auto auth error:', authErr);
+            }
+          }
+          FirebaseManager.updateUserUI();
+          FirebaseManager.attachRealtimeListeners();
+        });
+
+      } catch (err) {
+        console.warn('Firebase initialized in fallback local mode:', err.message);
+        FirebaseManager.initFallbackUser();
+      }
+    } else {
+      FirebaseManager.initFallbackUser();
+    }
+  }
+
+  static async pushUserProfile(userData) {
+    if (!FirebaseManager.db || !userData || !userData.uid) return;
+    try {
+      const payload = {
+        uid: userData.uid,
+        displayName: userData.displayName || 'Artisan',
+        email: userData.email || '',
+        photoURL: userData.photoURL || null,
+        isAnonymous: Boolean(userData.isAnonymous),
+        lastActive: new Date().toISOString()
+      };
+      await FirebaseManager.db.ref(`team_catalog/users/${userData.uid}`).set(payload);
+      console.log(`✓ FirebaseManager: User data stored at team_catalog/users/${userData.uid}`);
+    } catch (err) {
+      console.warn('Could not store user data in Realtime DB (Check Database Rules):', err.message);
+    }
+  }
+
+  static initFallbackUser() {
+    const savedUser = localStorage.getItem('auracraft_team_user');
+    if (savedUser) {
+      try { FirebaseManager.currentUser = JSON.parse(savedUser); } catch (e) { }
+    }
+    if (!FirebaseManager.currentUser) {
+      FirebaseManager.currentUser = {
+        uid: 'artisan_local_' + Math.random().toString(36).substr(2, 6),
+        displayName: 'Krunal (Artisan)',
+        email: 'artisan@aurasources.in',
+        isAnonymous: true
+      };
+    }
+    FirebaseManager.updateUserUI();
+    FirebaseManager.updateSyncStatusBadge('synced', 'Local Offline');
+  }
+
+  static attachRealtimeListeners() {
+    if (!FirebaseManager.db) return;
+    try {
+      FirebaseManager.updateSyncStatusBadge('syncing', 'Syncing...');
+
+      // 1. Listen for Team Projects
+      const projectsRef = FirebaseManager.db.ref('team_catalog/projects');
+      projectsRef.on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val && typeof val === 'object') {
+          const remoteProjects = Object.values(val);
+          if (Array.isArray(remoteProjects) && remoteProjects.length > 0) {
+            // Merge into local storage cache
+            const existing = StorageManager.getAll();
+            const projectMap = new Map();
+            // Load existing
+            existing.forEach(p => projectMap.set(p.id, p));
+            // Overwrite / add remote
+            remoteProjects.forEach(rp => {
+              if (rp && rp.id) projectMap.set(rp.id, rp);
+            });
+            const merged = Array.from(projectMap.values());
+            merged.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+            localStorage.setItem(StorageManager.STORAGE_KEY, JSON.stringify(merged));
+
+            if (FirebaseManager.studioRef) {
+              FirebaseManager.studioRef.updateCollectionCountBadge();
+              const fullColGrid = document.getElementById('full-col-grid');
+              if (fullColGrid) FirebaseManager.studioRef.renderFullCollectionsGrid();
+            }
+          }
+        }
+        FirebaseManager.updateSyncStatusBadge('synced', 'Cloud Synced');
+      }, (error) => {
+        console.warn('Realtime projects sync error (Check Database Rules):', error.message);
+        FirebaseManager.updateSyncStatusBadge('synced', 'Local Cache');
+      });
+
+      // 2. Listen for Team Pricing & Stone Rates Config
+      const settingsRef = FirebaseManager.db.ref('team_catalog/settings/pricing');
+      settingsRef.on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val && typeof val === 'object') {
+          PricingEngine.config = {
+            packaging: { ...DEFAULT_PRICING_CONFIG.packaging, ...val.packaging },
+            logistics: { ...DEFAULT_PRICING_CONFIG.logistics, ...val.logistics },
+            overheads: { ...DEFAULT_PRICING_CONFIG.overheads, ...val.overheads },
+            margin: { ...DEFAULT_PRICING_CONFIG.margin, ...val.margin },
+            stoneRates: { ...DEFAULT_PRICING_CONFIG.stoneRates, ...val.stoneRates }
+          };
+          localStorage.setItem(PricingEngine.STORAGE_KEY, JSON.stringify(PricingEngine.config));
+
+          if (FirebaseManager.studioRef) {
+            FirebaseManager.studioRef.updateUI();
+            FirebaseManager.studioRef.drawBracelet();
+            FirebaseManager.studioRef.renderEnhancedStoneRates();
+          }
+        }
+      });
+
+    } catch (e) {
+      console.warn('attachRealtimeListeners fallback:', e);
+      FirebaseManager.updateSyncStatusBadge('synced', 'Local Offline');
+    }
+  }
+
+  static async pushProject(projectData) {
+    FirebaseManager.updateSyncStatusBadge('syncing', 'Syncing...');
+    if (FirebaseManager.db && projectData && projectData.id) {
+      try {
+        await FirebaseManager.db.ref(`team_catalog/projects/${projectData.id}`).set(projectData);
+        console.log(`✓ FirebaseManager: Project "${projectData.title}" stored at team_catalog/projects/${projectData.id}`);
+        FirebaseManager.updateSyncStatusBadge('synced', 'Cloud Synced');
+        return true;
+      } catch (err) {
+        console.warn('Could not push project to Firebase DB (Check Realtime Database Rules):', err.message);
+        FirebaseManager.updateSyncStatusBadge('synced', 'Saved Locally');
+        return false;
+      }
+    }
+    FirebaseManager.updateSyncStatusBadge('synced', 'Saved Locally');
+    return true;
+  }
+
+  static async deleteProject(projectId) {
+    FirebaseManager.updateSyncStatusBadge('syncing', 'Syncing...');
+    if (FirebaseManager.db && projectId) {
+      try {
+        await FirebaseManager.db.ref(`team_catalog/projects/${projectId}`).remove();
+        console.log(`✓ FirebaseManager: Project deleted from team_catalog/projects/${projectId}`);
+        FirebaseManager.updateSyncStatusBadge('synced', 'Cloud Synced');
+        return true;
+      } catch (err) {
+        console.warn('Firebase remove failed:', err.message);
+      }
+    }
+    FirebaseManager.updateSyncStatusBadge('synced', 'Deleted Locally');
+    return true;
+  }
+
+  static async pushSettings(pricingConfig) {
+    FirebaseManager.updateSyncStatusBadge('syncing', 'Syncing...');
+    const payload = {
+      ...pricingConfig,
+      updatedAt: new Date().toISOString(),
+      updatedBy: FirebaseManager.currentUser ? {
+        uid: FirebaseManager.currentUser.uid,
+        displayName: FirebaseManager.currentUser.displayName
+      } : { displayName: 'Artisan' }
+    };
+    if (FirebaseManager.db) {
+      try {
+        await FirebaseManager.db.ref('team_catalog/settings/pricing').set(payload);
+        console.log('✓ FirebaseManager: Pricing settings stored at team_catalog/settings/pricing');
+        FirebaseManager.updateSyncStatusBadge('synced', 'Cloud Synced');
+        return true;
+      } catch (err) {
+        console.warn('Could not push settings to Firebase (Check Database Rules):', err.message);
+      }
+    }
+    FirebaseManager.updateSyncStatusBadge('synced', 'Saved Locally');
+    return true;
+  }
+
+  static updateUserUI() {
+    const user = FirebaseManager.currentUser;
+    if (!user) return;
+
+    // Header profile
+    const headerName = document.getElementById('header-user-name');
+    const headerAvatar = document.getElementById('header-user-avatar');
+    if (headerName) headerName.textContent = user.displayName || 'Team User';
+    if (headerAvatar) {
+      const initial = (user.displayName || 'U').charAt(0).toUpperCase();
+      headerAvatar.textContent = initial;
+    }
+
+    // Modal profile
+    const modalName = document.getElementById('modal-user-name');
+    const modalEmail = document.getElementById('modal-user-email');
+    const modalAvatar = document.getElementById('modal-user-avatar');
+    const loggedInBox = document.getElementById('team-user-logged-in-box');
+    const loginBox = document.getElementById('team-auth-login-box');
+
+    if (modalName) modalName.textContent = user.displayName;
+    if (modalEmail) modalEmail.textContent = user.email || (user.isAnonymous ? 'Guest Team Member' : '');
+    if (modalAvatar) modalAvatar.textContent = (user.displayName || 'U').charAt(0).toUpperCase();
+
+    if (loggedInBox && loginBox) {
+      if (user && !user.isAnonymous) {
+        loggedInBox.style.display = 'block';
+        loginBox.style.display = 'none';
+      } else {
+        loggedInBox.style.display = 'none';
+        loginBox.style.display = 'block';
+      }
+    }
+  }
+
+  static updateSyncStatusBadge(state, label) {
+    const badge = document.getElementById('cloud-sync-badge');
+    const lbl = document.getElementById('cloud-sync-label');
+    const icon = document.getElementById('cloud-sync-icon');
+    if (!badge || !lbl) return;
+
+    badge.className = `cloud-sync-badge ${state}`;
+    lbl.textContent = label;
+    if (icon) {
+      if (state === 'syncing') icon.className = 'fa-solid fa-arrows-rotate';
+      else if (state === 'offline') icon.className = 'fa-solid fa-cloud-slash';
+      else icon.className = 'fa-solid fa-cloud';
+    }
+  }
+}
+
+// ============================================================================
 // 2. PricingEngine (Epic 1: 100% Configurable Multi-Tier Pricing Logic)
 // ============================================================================
 const DEFAULT_PRICING_CONFIG = {
@@ -521,6 +1765,8 @@ class PricingEngine {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(PricingEngine.STORAGE_KEY, JSON.stringify(PricingEngine.config));
       }
+      // Sync to Firebase Realtime Database
+      FirebaseManager.pushSettings(PricingEngine.config);
     } catch (e) {
       console.error('Failed to persist pricing config:', e);
     }
@@ -532,6 +1778,8 @@ class PricingEngine {
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem(PricingEngine.STORAGE_KEY);
       }
+      // Sync reset to Firebase Realtime Database
+      FirebaseManager.pushSettings(PricingEngine.config);
     } catch (e) {
       console.error('Failed to reset pricing config:', e);
     }
@@ -831,6 +2079,13 @@ class StorageManager {
     try {
       const all = StorageManager.getAll();
       const now = new Date().toISOString();
+      const currentUser = FirebaseManager.currentUser || { displayName: 'Artisan', email: 'artisan@aurasources.in' };
+      const authorStamp = {
+        uid: currentUser.uid || 'artisan',
+        displayName: currentUser.displayName || 'Artisan',
+        email: currentUser.email || ''
+      };
+
       let savedItem = null;
 
       if (productData.id) {
@@ -839,6 +2094,7 @@ class StorageManager {
           savedItem = {
             ...all[idx],
             ...productData,
+            lastEditedBy: authorStamp,
             updatedAt: now
           };
           all[idx] = savedItem;
@@ -850,7 +2106,9 @@ class StorageManager {
         savedItem = {
           ...productData,
           id,
-          createdAt: now,
+          createdBy: productData.createdBy || authorStamp,
+          lastEditedBy: authorStamp,
+          createdAt: productData.createdAt || now,
           updatedAt: now
         };
         all.unshift(savedItem);
@@ -859,6 +2117,10 @@ class StorageManager {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(StorageManager.STORAGE_KEY, JSON.stringify(all));
       }
+
+      // Sync to Firebase Realtime Database
+      FirebaseManager.pushProject(savedItem);
+
       return savedItem;
     } catch (e) {
       console.error('StorageManager.save failed:', e);
@@ -873,6 +2135,10 @@ class StorageManager {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(StorageManager.STORAGE_KEY, JSON.stringify(filtered));
       }
+
+      // Sync deletion to Firebase Realtime Database
+      FirebaseManager.deleteProject(id);
+
       return true;
     } catch (e) {
       console.error('StorageManager.delete failed:', e);
@@ -888,12 +2154,20 @@ class StorageManager {
       const all = StorageManager.getAll();
       const variantNumber = all.length + 1;
       const newSku = SKUManager.generateSKU(original.beads, original.totalBits, original.beadDiameterMm, variantNumber);
+      const currentUser = FirebaseManager.currentUser || { displayName: 'Artisan', email: 'artisan@aurasources.in' };
+      const authorStamp = {
+        uid: currentUser.uid || 'artisan',
+        displayName: currentUser.displayName || 'Artisan',
+        email: currentUser.email || ''
+      };
 
       const clone = {
         ...JSON.parse(JSON.stringify(original)),
         id: `ac_prod_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
         title: `${original.title} (Copy)`,
         sku: newSku,
+        createdBy: authorStamp,
+        lastEditedBy: authorStamp,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -902,6 +2176,10 @@ class StorageManager {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(StorageManager.STORAGE_KEY, JSON.stringify(all));
       }
+
+      // Sync duplicate to Firebase
+      FirebaseManager.pushProject(clone);
+
       return clone;
     } catch (e) {
       console.error('StorageManager.duplicate failed:', e);
@@ -1031,7 +2309,7 @@ class BackupEngine {
 
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backupData, null, 2));
     const filename = `auracraft_backup_${new Date().toISOString().slice(0, 10)}.json`;
-    
+
     if (typeof document !== 'undefined') {
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute('href', dataStr);
@@ -1189,7 +2467,7 @@ class BraceletStudio {
     this.activeStoneId = 'citrine';
     this.toolMode = 'place'; // 'place' | 'fill' | 'alternate'
     this.alternateSecondaryId = 'amethyst';
-    
+
     // Product & SKU metadata (Epic 2)
     this.product = {
       title: 'Solar Abundance & Manifestation Bracelet',
@@ -1218,6 +2496,11 @@ class BraceletStudio {
     // Pricing snapshot
     this.pricing = null;
 
+    // Overwrite Protection & Dirty State Tracking
+    this.isDirty = false;
+    this.unsavedCallbacks = null;
+    this.saveAsCallback = null;
+
     // History for Undo / Redo
     this.history = [];
     this.historyIndex = -1;
@@ -1228,7 +2511,7 @@ class BraceletStudio {
     // Setup Canvas
     this.canvas = document.getElementById('bracelet-canvas');
     this.ctx = this.canvas.getContext('2d');
-    
+
     this.init();
   }
 
@@ -1236,21 +2519,66 @@ class BraceletStudio {
     // Seed default collection designs if storage is empty
     StorageManager.seedDefaultsIfEmpty();
 
+    // Initialize Firebase Realtime Database & User Auth
+    FirebaseManager.init(this);
+
     // Populate default beads with balanced preset
     this.applyPreset('wealth', false);
     this.saveHistoryState();
+    this.markClean();
 
     this.renderStonesCatalog();
     this.bindEvents();
+    this.initTeamAuthEvents();
     this.initViewRouter();
     this.initSidebarResizers();
     this.initAuthGate();
     this.updateUI();
     this.updateCollectionCountBadge();
+    this.updateProjectStatusBanner();
     this.drawBracelet();
 
     // Check for incoming shareable URL hash (#design=...) (Epic 4)
     this.checkAndHydrateUrlHash();
+  }
+
+  markDirty() {
+    this.isDirty = true;
+    this.updateProjectStatusBanner();
+  }
+
+  markClean() {
+    this.isDirty = false;
+    this.updateProjectStatusBanner();
+  }
+
+  updateProjectStatusBanner() {
+    const pill = document.getElementById('project-status-pill');
+    const stateTxt = document.getElementById('project-state-text');
+    const skuChip = document.getElementById('header-sku-chip');
+    const saveLabel = document.getElementById('header-save-btn-label');
+    const sidebarSaveLabel = document.getElementById('sidebar-save-btn-label');
+    const auditText = document.getElementById('project-audit-text');
+
+    if (skuChip) skuChip.textContent = this.product.sku || 'AC-CIT-AME-22B-8MM-001';
+
+    if (this.currentProductId) {
+      if (pill) pill.className = `project-status-pill ${this.isDirty ? 'dirty' : 'saved'}`;
+      if (stateTxt) stateTxt.textContent = this.isDirty ? `Editing: ${this.product.sku} (Unsaved)` : `Editing: ${this.product.sku} (Saved)`;
+      if (saveLabel) saveLabel.textContent = 'Save Changes';
+      if (sidebarSaveLabel) sidebarSaveLabel.textContent = 'Save Changes (Ctrl+S)';
+
+      const currentProj = StorageManager.getById(this.currentProductId);
+      const createdBy = currentProj?.createdBy?.displayName || 'Artisan';
+      const lastEditedBy = currentProj?.lastEditedBy?.displayName || createdBy;
+      if (auditText) auditText.textContent = `Created by: ${createdBy} | Last edit: ${lastEditedBy}`;
+    } else {
+      if (pill) pill.className = `project-status-pill draft ${this.isDirty ? 'dirty' : ''}`;
+      if (stateTxt) stateTxt.textContent = this.isDirty ? 'New Project Draft • Unsaved' : 'New Project Draft';
+      if (saveLabel) saveLabel.textContent = 'Save to Catalog';
+      if (sidebarSaveLabel) sidebarSaveLabel.textContent = 'Save to Catalog (Ctrl+S)';
+      if (auditText) auditText.textContent = 'New Untitled Draft • Not saved in collection yet';
+    }
   }
 
   // ============================================================================
@@ -1293,13 +2621,14 @@ class BraceletStudio {
     if (state.product) {
       this.product = { ...state.product };
     }
-    
+
     document.getElementById('bits-slider').value = this.totalBits;
     document.getElementById('cord-type-select').value = this.cordType;
     document.querySelectorAll('#bead-size-selector .segment-btn').forEach(btn => {
       btn.classList.toggle('active', parseInt(btn.dataset.size) === this.beadDiameterMm);
     });
 
+    this.markDirty();
     this.updateUI();
     this.drawBracelet();
     this.updateUndoRedoButtons();
@@ -1336,6 +2665,7 @@ class BraceletStudio {
   setBeadAt(index, stoneId) {
     if (index >= 0 && index < this.totalBits) {
       this.beads[index] = stoneId;
+      this.markDirty();
       this.saveHistoryState();
       this.updateUI();
       this.drawBracelet();
@@ -1344,6 +2674,7 @@ class BraceletStudio {
 
   fillAllBeads(stoneId) {
     this.beads = Array(this.totalBits).fill(stoneId);
+    this.markDirty();
     this.saveHistoryState();
     this.updateUI();
     this.drawBracelet();
@@ -1352,6 +2683,7 @@ class BraceletStudio {
 
   applyAlternatingPattern(stoneA, stoneB) {
     this.beads = Array.from({ length: this.totalBits }, (_, i) => i % 2 === 0 ? stoneA : stoneB);
+    this.markDirty();
     this.saveHistoryState();
     this.updateUI();
     this.drawBracelet();
@@ -1364,6 +2696,7 @@ class BraceletStudio {
 
     this.beads = Array.from({ length: this.totalBits }, (_, i) => pattern[i % pattern.length]);
     if (shouldSaveHistory) {
+      this.markDirty();
       this.saveHistoryState();
     }
     this.updateUI();
@@ -1376,6 +2709,7 @@ class BraceletStudio {
     for (let i = 0; i < half; i++) {
       this.beads[this.totalBits - 1 - i] = this.beads[i];
     }
+    this.markDirty();
     this.saveHistoryState();
     this.updateUI();
     this.drawBracelet();
@@ -1390,6 +2724,7 @@ class BraceletStudio {
       const last = this.beads.pop();
       this.beads.unshift(last);
     }
+    this.markDirty();
     this.saveHistoryState();
     this.updateUI();
     this.drawBracelet();
@@ -1398,10 +2733,11 @@ class BraceletStudio {
   randomizeHarmonious() {
     const shuffledStones = [...STONES_DB].sort(() => 0.5 - Math.random());
     const paletteSubset = shuffledStones.slice(0, Math.floor(Math.random() * 3) + 3).map(s => s.id);
-    
+
     this.beads = Array.from({ length: this.totalBits }, () => {
       return paletteSubset[Math.floor(Math.random() * paletteSubset.length)];
     });
+    this.markDirty();
     this.saveHistoryState();
     this.updateUI();
     this.drawBracelet();
@@ -1410,6 +2746,7 @@ class BraceletStudio {
 
   clearBracelet() {
     this.beads = Array(this.totalBits).fill('clear-quartz');
+    this.markDirty();
     this.saveHistoryState();
     this.updateUI();
     this.drawBracelet();
@@ -1460,7 +2797,7 @@ class BraceletStudio {
       const angle = (i * ((Math.PI * 2) / count)) + this.rotationAngle - Math.PI / 2;
       const x = centerX + Math.cos(angle) * baseRadius;
       const y = centerY + Math.sin(angle) * (baseRadius * 0.96);
-      const z = Math.sin(angle); 
+      const z = Math.sin(angle);
       beadSlots.push({ index: i, stoneId: beads[i] || 'citrine', x, y, angle, z });
     }
 
@@ -1543,64 +2880,116 @@ class BraceletStudio {
   }
 
   renderRealisticBead(ctx, x, y, r, stone, isHovered, isSelected) {
+    if (!stone) return;
+
+    // High-performance photorealistic texture caching
+    if (typeof GemstoneTextureEngine !== 'undefined') {
+      const beadCanvas = GemstoneTextureEngine.getBeadTexture(stone, r, isSelected, isHovered, this.glowEnabled);
+      if (beadCanvas) {
+        const offset = beadCanvas.width / 2;
+        ctx.drawImage(beadCanvas, x - offset, y - offset);
+        return;
+      }
+    }
+
     ctx.save();
 
+    // 1. Aura / Refraction Glow (if enabled)
     if (this.glowEnabled) {
-      const glow = ctx.createRadialGradient(x, y, r * 0.8, x, y, r * 1.3);
-      glow.addColorStop(0, stone.glowColor);
+      const glow = ctx.createRadialGradient(x, y, r * 0.8, x, y, r * 1.35);
+      glow.addColorStop(0, stone.glowColor || 'rgba(201, 169, 110, 0.4)');
       glow.addColorStop(1, 'transparent');
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(x, y, r * 1.3, 0, Math.PI * 2);
+      ctx.arc(x, y, r * 1.35, 0, Math.PI * 2);
       ctx.fill();
     }
 
+    // 2. Base Spherical Drop Shadow (simulates beads casting contact shadows onto cord)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x + r * 0.08, y + r * 0.08, r * 0.98, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fill();
+    ctx.restore();
+
+    // 3. Clip Bead Sphere Mask
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.clip();
 
+    // 4. Render Specialized Procedural Material
     this.drawBeadMaterial(ctx, x, y, r, stone);
 
-    const lightX = x - r * 0.35;
-    const lightY = y - r * 0.35;
+    // 5. Subsurface Scattering (SSS) Internal Glow for Translucent Gemstones & Crystals
+    const isTranslucent = ['gem', 'rose-quartz', 'clear-quartz', 'amber', 'jade', 'precious-emerald', 'precious-ruby', 'precious-sapphire'].includes(stone.type) ||
+      ['citrine', 'amethyst', 'rose-quartz', 'clear-quartz', 'amber', 'emerald', 'ruby', 'blue-sapphire', 'green-aventurine'].includes(stone.id);
+    if (isTranslucent) {
+      const sssGrad = ctx.createRadialGradient(x - r * 0.15, y - r * 0.15, r * 0.05, x, y, r * 0.95);
+      sssGrad.addColorStop(0, stone.highlightColor ? stone.highlightColor + '66' : 'rgba(255, 255, 255, 0.35)');
+      sssGrad.addColorStop(0.5, stone.baseColor ? stone.baseColor + '33' : 'rgba(255, 255, 255, 0.1)');
+      sssGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = sssGrad;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-    const sphereShade = ctx.createRadialGradient(lightX, lightY, r * 0.1, x, y, r);
-    sphereShade.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
-    sphereShade.addColorStop(0.4, 'rgba(255, 255, 255, 0.02)');
-    sphereShade.addColorStop(0.75, 'rgba(0, 0, 0, 0.25)');
-    sphereShade.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+    // 6. Realistic 3D Spherical Volume Shading & Ambient Occlusion
+    const lightX = x - r * 0.32;
+    const lightY = y - r * 0.32;
+
+    const sphereShade = ctx.createRadialGradient(lightX, lightY, r * 0.08, x, y, r);
+    sphereShade.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
+    sphereShade.addColorStop(0.35, 'rgba(255, 255, 255, 0.04)');
+    sphereShade.addColorStop(0.7, 'rgba(0, 0, 0, 0.28)');
+    sphereShade.addColorStop(0.92, 'rgba(0, 0, 0, 0.65)');
+    sphereShade.addColorStop(1, 'rgba(0, 0, 0, 0.85)');
 
     ctx.fillStyle = sphereShade;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
 
-    // Clean Specular Highlight
+    // 7. Primary Soft Specular Highlight Lobe
     ctx.beginPath();
-    ctx.ellipse(x - r * 0.3, y - r * 0.32, r * 0.22, r * 0.14, -Math.PI / 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.ellipse(x - r * 0.32, y - r * 0.32, r * 0.26, r * 0.16, -Math.PI / 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
     ctx.fill();
 
+    // 8. Sharp Diamond Pinpoint Refraction Glint
     ctx.beginPath();
-    ctx.arc(x, y, r * 0.94, Math.PI * 0.2, Math.PI * 0.45);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = r * 0.08;
+    ctx.arc(x - r * 0.28, y - r * 0.28, r * 0.09, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    // 9. Subtle Ambient Fresnel Rim Light (Bottom-Right Studio Bounce)
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.94, Math.PI * 0.15, Math.PI * 0.48);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.lineWidth = r * 0.07;
     ctx.stroke();
 
     ctx.restore();
 
+    // 10. Selection & Hover Halo Ring
     if (isSelected || isHovered) {
       ctx.save();
       ctx.beginPath();
       ctx.arc(x, y, r + 2.5, 0, Math.PI * 2);
-      ctx.strokeStyle = isSelected ? '#c9a96e' : 'rgba(255, 255, 255, 0.6)';
+      ctx.strokeStyle = isSelected ? '#c9a96e' : 'rgba(255, 255, 255, 0.7)';
       ctx.lineWidth = isSelected ? 2.5 : 1.5;
+      if (isSelected) {
+        ctx.shadowColor = 'rgba(201, 169, 110, 0.8)';
+        ctx.shadowBlur = 8;
+      }
       ctx.stroke();
       ctx.restore();
     }
   }
 
   drawBeadMaterial(ctx, x, y, r, stone) {
+    // Base Radial Color Gradient
     const baseGrad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
     baseGrad.addColorStop(0, stone.highlightColor);
     baseGrad.addColorStop(0.5, stone.baseColor);
@@ -1610,134 +2999,301 @@ class BraceletStudio {
 
     switch (stone.type) {
       case 'tigereye': {
+        // Silky Chatoyancy Bands with golden shimmer
         ctx.save();
-        ctx.rotate(0.3);
-        const bandGrad = ctx.createLinearGradient(x - r, y - r, x + r, y + r);
-        bandGrad.addColorStop(0, 'rgba(251, 191, 36, 0.8)');
-        bandGrad.addColorStop(0.3, 'rgba(120, 53, 15, 0.9)');
-        bandGrad.addColorStop(0.5, 'rgba(254, 240, 138, 0.85)');
-        bandGrad.addColorStop(0.7, 'rgba(69, 26, 3, 0.95)');
-        bandGrad.addColorStop(1, 'rgba(217, 119, 6, 0.8)');
+        ctx.rotate(0.35);
+        const bandGrad = ctx.createLinearGradient(x - r * 1.2, y - r * 1.2, x + r * 1.2, y + r * 1.2);
+        bandGrad.addColorStop(0, 'rgba(69, 26, 3, 0.95)');
+        bandGrad.addColorStop(0.2, 'rgba(180, 83, 9, 0.85)');
+        bandGrad.addColorStop(0.42, 'rgba(251, 191, 36, 0.95)');
+        bandGrad.addColorStop(0.5, 'rgba(254, 240, 138, 1)');
+        bandGrad.addColorStop(0.58, 'rgba(217, 119, 6, 0.95)');
+        bandGrad.addColorStop(0.8, 'rgba(120, 53, 15, 0.9)');
+        bandGrad.addColorStop(1, 'rgba(69, 26, 3, 0.95)');
         ctx.fillStyle = bandGrad;
-        ctx.fillRect(x - r * 1.5, y - r * 1.5, r * 3, r * 3);
+        ctx.fillRect(x - r * 2, y - r * 2, r * 4, r * 4);
+
+        // Fine chatoyant silk fibers
+        ctx.strokeStyle = 'rgba(254, 240, 138, 0.35)';
+        ctx.lineWidth = 0.8;
+        for (let i = -r * 0.8; i <= r * 0.8; i += r * 0.25) {
+          ctx.beginPath();
+          ctx.moveTo(x + i, y - r);
+          ctx.lineTo(x + i + r * 0.2, y + r);
+          ctx.stroke();
+        }
         ctx.restore();
         break;
       }
+
       case 'lapis': {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        // Deep Ultramarine with Calcite Clouds & Golden Pyrite Flecks
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
         ctx.beginPath();
-        ctx.ellipse(x + r * 0.2, y - r * 0.1, r * 0.4, r * 0.15, 0.4, 0, Math.PI * 2);
+        ctx.ellipse(x + r * 0.2, y - r * 0.15, r * 0.45, r * 0.18, 0.35, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#ffd700';
-        const speckles = [[-0.3, -0.2], [0.1, 0.3], [-0.1, 0.1], [0.35, -0.15], [-0.25, 0.35]];
-        speckles.forEach(([dx, dy]) => {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.beginPath();
+        ctx.ellipse(x - r * 0.25, y + r * 0.3, r * 0.35, r * 0.14, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Metallic Gold Pyrite Micro-Flecks
+        const speckles = [
+          [-0.32, -0.22, 0.07], [0.12, 0.28, 0.06], [-0.12, 0.12, 0.05],
+          [0.34, -0.16, 0.065], [-0.26, 0.34, 0.055], [0.05, -0.32, 0.06],
+          [0.25, 0.15, 0.045], [-0.4, 0.05, 0.05]
+        ];
+        speckles.forEach(([dx, dy, sz]) => {
           ctx.beginPath();
-          ctx.arc(x + dx * r, y + dy * r, r * 0.06, 0, Math.PI * 2);
+          ctx.arc(x + dx * r, y + dy * r, r * sz, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffd700';
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(x + dx * r - 0.5, y + dy * r - 0.5, r * sz * 0.4, 0, Math.PI * 2);
           ctx.fill();
         });
         break;
       }
+
       case 'evileye': {
+        // Concentric Enamel Nazar Amulet Protection Bead
         ctx.fillStyle = '#1e3a8a';
         ctx.beginPath();
-        ctx.arc(x, y, r * 0.95, 0, Math.PI * 2);
+        ctx.arc(x, y, r * 0.96, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(x, y, r * 0.65, 0, Math.PI * 2);
+        ctx.arc(x, y, r * 0.68, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = '#0ea5e9';
         ctx.beginPath();
-        ctx.arc(x, y, r * 0.4, 0, Math.PI * 2);
+        ctx.arc(x, y, r * 0.44, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = '#09090b';
         ctx.beginPath();
-        ctx.arc(x, y, r * 0.2, 0, Math.PI * 2);
+        ctx.arc(x, y, r * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Nazar Glass Dome Reflection
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.beginPath();
+        ctx.ellipse(x - r * 0.18, y - r * 0.2, r * 0.15, r * 0.08, -0.4, 0, Math.PI * 2);
         ctx.fill();
         break;
       }
+
       case 'lavastone': {
+        // Porous Volcanic Basalt with 3D Shaded Depressions
         ctx.fillStyle = '#09090b';
         const craters = [
-          [-0.3, -0.3, 0.12], [0.2, -0.4, 0.09], [0, 0.1, 0.15],
-          [-0.4, 0.2, 0.1], [0.3, 0.3, 0.11], [-0.1, -0.2, 0.08]
+          [-0.32, -0.32, 0.14], [0.22, -0.42, 0.1], [0.02, 0.12, 0.16],
+          [-0.42, 0.22, 0.12], [0.32, 0.32, 0.13], [-0.12, -0.22, 0.09],
+          [0.38, -0.12, 0.08], [-0.18, 0.38, 0.11]
         ];
         craters.forEach(([cx, cy, cr]) => {
+          // Crater Dark Shadow Pit
           ctx.beginPath();
           ctx.arc(x + cx * r, y + cy * r, r * cr, 0, Math.PI * 2);
+          ctx.fillStyle = '#050505';
+          ctx.fill();
+
+          // Crater Rim Highlight
+          ctx.beginPath();
+          ctx.arc(x + cx * r - 0.5, y + cy * r - 0.5, r * cr, Math.PI * 0.7, Math.PI * 1.8);
+          ctx.strokeStyle = 'rgba(113, 113, 122, 0.4)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        });
+        break;
+      }
+
+      case 'turquoise': {
+        // Sacred Turquoise with Natural Dark Matrix Webbing
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.lineWidth = 1.3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        // Main matrix vein branches
+        ctx.moveTo(x - r * 0.7, y - r * 0.25);
+        ctx.lineTo(x - r * 0.15, y + r * 0.12);
+        ctx.lineTo(x + r * 0.45, y - r * 0.35);
+        ctx.lineTo(x + r * 0.7, y - r * 0.1);
+        ctx.moveTo(x - r * 0.15, y + r * 0.12);
+        ctx.lineTo(x + r * 0.22, y + r * 0.55);
+        ctx.lineTo(x + r * 0.05, y + r * 0.75);
+        ctx.moveTo(x - r * 0.4, y + r * 0.02);
+        ctx.lineTo(x - r * 0.55, y + r * 0.45);
+        ctx.stroke();
+
+        // Dark micro-veinlets
+        ctx.lineWidth = 0.8;
+        ctx.strokeStyle = 'rgba(30, 41, 59, 0.7)';
+        ctx.beginPath();
+        ctx.moveTo(x + r * 0.2, y - r * 0.1);
+        ctx.lineTo(x + r * 0.35, y + r * 0.18);
+        ctx.stroke();
+        break;
+      }
+
+      case 'mossagate': {
+        // Translucent Chalcedony with Dendritic Forest-Green Moss Filaments
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+
+        ctx.strokeStyle = '#052e16';
+        ctx.lineWidth = 1.6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x - r * 0.55, y + r * 0.45);
+        ctx.quadraticCurveTo(x - r * 0.1, y + r * 0.1, x + r * 0.35, y - r * 0.45);
+        ctx.moveTo(x - r * 0.15, y + r * 0.12);
+        ctx.lineTo(x + r * 0.45, y + r * 0.22);
+        ctx.moveTo(x + r * 0.1, y - r * 0.15);
+        ctx.lineTo(x + r * 0.55, y - r * 0.2);
+        ctx.moveTo(x - r * 0.35, y + r * 0.28);
+        ctx.lineTo(x - r * 0.6, y + r * 0.1);
+        ctx.stroke();
+
+        // Micro moss clusters
+        ctx.fillStyle = '#14532d';
+        [[-0.2, 0.2], [0.15, 0.05], [0.3, -0.2], [-0.4, 0.35]].forEach(([dx, dy]) => {
+          ctx.beginPath();
+          ctx.arc(x + dx * r, y + dy * r, r * 0.08, 0, Math.PI * 2);
           ctx.fill();
         });
         break;
       }
-      case 'turquoise': {
-        ctx.strokeStyle = 'rgba(24, 24, 27, 0.65)';
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(x - r * 0.6, y - r * 0.2);
-        ctx.lineTo(x - r * 0.1, y + r * 0.1);
-        ctx.lineTo(x + r * 0.4, y - r * 0.3);
-        ctx.moveTo(x - r * 0.1, y + r * 0.1);
-        ctx.lineTo(x + r * 0.2, y + r * 0.5);
-        ctx.stroke();
-        break;
-      }
-      case 'mossagate': {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.fillRect(x - r, y - r, r * 2, r * 2);
-        ctx.strokeStyle = '#052e16';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(x - r * 0.5, y + r * 0.4);
-        ctx.quadraticCurveTo(x, y, x + r * 0.3, y - r * 0.4);
-        ctx.moveTo(x - r * 0.1, y + r * 0.1);
-        ctx.lineTo(x + r * 0.4, y + r * 0.2);
-        ctx.stroke();
-        break;
-      }
+
       case 'cateyes': {
+        // Chatoyant Optical Light Slit with Glow Falloff
         ctx.save();
-        const slitGrad = ctx.createLinearGradient(x - r * 0.4, y, x + r * 0.4, y);
+        const slitGrad = ctx.createLinearGradient(x - r * 0.45, y, x + r * 0.45, y);
         slitGrad.addColorStop(0, 'rgba(254, 240, 138, 0)');
-        slitGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.95)');
+        slitGrad.addColorStop(0.35, 'rgba(254, 240, 138, 0.6)');
+        slitGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.98)');
+        slitGrad.addColorStop(0.65, 'rgba(254, 240, 138, 0.6)');
         slitGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
         ctx.fillStyle = slitGrad;
-        ctx.fillRect(x - r * 0.4, y - r, r * 0.8, r * 2);
+        ctx.fillRect(x - r * 0.45, y - r, r * 0.9, r * 2);
         ctx.restore();
         break;
       }
+
       case 'blade': {
+        // Chamfered Metallic Spacer Charm with Precision Bevels
         ctx.fillStyle = '#64748b';
-        ctx.fillRect(x - r * 0.3, y - r, r * 0.6, r * 2);
+        ctx.fillRect(x - r * 0.32, y - r, r * 0.64, r * 2);
         ctx.strokeStyle = '#c9a96e';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x - r * 0.3, y - r, r * 0.6, r * 2);
+        ctx.lineWidth = 2.2;
+        ctx.strokeRect(x - r * 0.32, y - r, r * 0.64, r * 2);
+
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(x - r * 0.08, y - r, r * 0.16, r * 2);
         break;
       }
+
       case 'clear-quartz': {
-        const rainbow = ctx.createLinearGradient(x - r * 0.5, y - r * 0.5, x + r * 0.5, y + r * 0.5);
-        rainbow.addColorStop(0, 'rgba(239, 68, 68, 0.2)');
-        rainbow.addColorStop(0.3, 'rgba(234, 179, 8, 0.2)');
-        rainbow.addColorStop(0.6, 'rgba(34, 197, 94, 0.2)');
-        rainbow.addColorStop(1, 'rgba(59, 130, 246, 0.2)');
+        // Prismatic Spectral Dispersion & Facet Fissures
+        const rainbow = ctx.createLinearGradient(x - r * 0.6, y - r * 0.6, x + r * 0.6, y + r * 0.6);
+        rainbow.addColorStop(0, 'rgba(239, 68, 68, 0.22)');
+        rainbow.addColorStop(0.28, 'rgba(234, 179, 8, 0.22)');
+        rainbow.addColorStop(0.55, 'rgba(34, 197, 94, 0.22)');
+        rainbow.addColorStop(0.82, 'rgba(59, 130, 246, 0.25)');
+        rainbow.addColorStop(1, 'rgba(168, 85, 247, 0.25)');
         ctx.fillStyle = rainbow;
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+
+        // Internal crystal facet lines
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x - r * 0.4, y - r * 0.3);
+        ctx.lineTo(x + r * 0.1, y + r * 0.4);
+        ctx.lineTo(x + r * 0.5, y - r * 0.1);
+        ctx.stroke();
+        break;
+      }
+
+      case 'pyrite': {
+        // Cubic Metallic Facets with High-Contrast Glints
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(x - r * 0.35, y - r * 0.35, r * 0.55, r * 0.55);
+        ctx.strokeRect(x + r * 0.08, y + r * 0.08, r * 0.45, r * 0.45);
+        ctx.fillStyle = 'rgba(254, 240, 138, 0.3)';
+        ctx.fillRect(x - r * 0.35, y - r * 0.35, r * 0.55, r * 0.55);
+        break;
+      }
+
+      case 'amber': {
+        // Warm Honey Fossil Amber with Micro Air Inclusions
+        ctx.fillStyle = 'rgba(254, 243, 199, 0.45)';
+        ctx.beginPath();
+        ctx.arc(x + r * 0.18, y + r * 0.12, r * 0.16, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(69, 26, 3, 0.6)';
+        ctx.beginPath();
+        ctx.arc(x - r * 0.2, y + r * 0.25, r * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'rose-quartz': {
+        // Soft Translucent Rose Quartz with Milky Veils
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.32)';
+        ctx.beginPath();
+        ctx.ellipse(x - r * 0.1, y + r * 0.1, r * 0.5, r * 0.25, 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'obsidian': {
+        // Volcanic Mirror Obsidian with Crisp Curved Specular Reflections
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.85, -Math.PI * 0.4, -Math.PI * 0.1);
+        ctx.stroke();
+        break;
+      }
+
+      case 'hematite': {
+        // Chrome Mirror Gunmetal Horizon
+        const chromeGrad = ctx.createLinearGradient(x, y - r, x, y + r);
+        chromeGrad.addColorStop(0, '#475569');
+        chromeGrad.addColorStop(0.48, '#cbd5e1');
+        chromeGrad.addColorStop(0.52, '#0f172a');
+        chromeGrad.addColorStop(1, '#334155');
+        ctx.fillStyle = chromeGrad;
         ctx.fillRect(x - r, y - r, r * 2, r * 2);
         break;
       }
-      case 'pyrite': {
-        ctx.strokeStyle = '#fef08a';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x - r * 0.3, y - r * 0.3, r * 0.5, r * 0.5);
-        ctx.strokeRect(x + r * 0.1, y + r * 0.1, r * 0.4, r * 0.4);
+
+      case 'sodalite': {
+        // White Calcite Veining across Denim Blue
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(x - r * 0.6, y - r * 0.3);
+        ctx.lineTo(x - r * 0.1, y + r * 0.1);
+        ctx.lineTo(x + r * 0.5, y + r * 0.4);
+        ctx.moveTo(x - r * 0.1, y + r * 0.1);
+        ctx.lineTo(x + r * 0.3, y - r * 0.35);
+        ctx.stroke();
         break;
       }
-      case 'amber': {
-        ctx.fillStyle = 'rgba(254, 243, 199, 0.4)';
+
+      case 'jade': {
+        // Soft Translucent Green Jade with Silky Luster
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
         ctx.beginPath();
-        ctx.arc(x + r * 0.15, y + r * 0.1, r * 0.15, 0, Math.PI * 2);
+        ctx.ellipse(x + r * 0.15, y - r * 0.15, r * 0.4, r * 0.2, -0.3, 0, Math.PI * 2);
         ctx.fill();
         break;
       }
@@ -1853,7 +3409,7 @@ class BraceletStudio {
     if (subEl) subEl.textContent = `${stone.chakra} • ${stone.alias || 'Natural Crystal'}`;
     const priceEl = document.getElementById('active-stone-price-tag');
     if (priceEl) priceEl.textContent = `₹${effectiveRate.toFixed(2)}`;
-    
+
     const bannerBubble = document.getElementById('active-stone-preview-bubble');
     if (bannerBubble) {
       bannerBubble.innerHTML = '';
@@ -1928,7 +3484,7 @@ class BraceletStudio {
     if (!this.product.isCustomTitle) {
       this.product.title = SKUManager.generateTitle(this.beads, this.totalBits, this.beadDiameterMm);
     }
-    
+
     setTxt('product-sku-badge', this.product.sku);
 
     const titleInput = document.getElementById('product-title-input');
@@ -1988,7 +3544,7 @@ class BraceletStudio {
       const item = document.createElement('div');
       item.className = `ribbon-bead-item ${idx === this.selectedBeadIndex ? 'active-slot' : ''}`;
       item.title = `Slot #${idx + 1}: ${stone.name} (₹${PricingEngine.getStoneRate(stoneId).toFixed(2)})`;
-      
+
       const sCanvas = document.createElement('canvas');
       sCanvas.width = 24;
       sCanvas.height = 24;
@@ -2146,7 +3702,7 @@ class BraceletStudio {
       if (savedRightW) {
         document.documentElement.style.setProperty('--right-sidebar-w', `${savedRightW}px`);
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Left Resizer: Gemstone Palette
     if (leftResizer) {
@@ -2187,11 +3743,11 @@ class BraceletStudio {
         document.body.style.userSelect = '';
         try {
           if (leftResizer.releasePointerCapture) leftResizer.releasePointerCapture(e.pointerId);
-        } catch (err) {}
+        } catch (err) { }
         const finalW = getLeftW();
         try {
           localStorage.setItem('auracraft_left_w', finalW);
-        } catch (err) {}
+        } catch (err) { }
         this.drawBracelet();
       };
 
@@ -2240,11 +3796,11 @@ class BraceletStudio {
         document.body.style.userSelect = '';
         try {
           if (rightResizer.releasePointerCapture) rightResizer.releasePointerCapture(e.pointerId);
-        } catch (err) {}
+        } catch (err) { }
         const finalW = getRightW();
         try {
           localStorage.setItem('auracraft_right_w', finalW);
-        } catch (err) {}
+        } catch (err) { }
         this.drawBracelet();
       };
 
@@ -2261,7 +3817,7 @@ class BraceletStudio {
   bindEvents() {
     const bitsSlider = document.getElementById('bits-slider');
     if (bitsSlider) bitsSlider.addEventListener('input', (e) => this.setTotalBits(e.target.value));
-    
+
     const decBitsBtn = document.getElementById('btn-decrement-bits');
     if (decBitsBtn) decBitsBtn.addEventListener('click', () => this.setTotalBits(this.totalBits - 1));
     const incBitsBtn = document.getElementById('btn-increment-bits');
@@ -2314,10 +3870,10 @@ class BraceletStudio {
         this.toolMode = btn.dataset.mode;
         const statusText = document.getElementById('stage-status-text');
         if (statusText) {
-          statusText.textContent = 
+          statusText.textContent =
             this.toolMode === 'fill' ? 'Fill Mode: Click any stone to fill all beads' :
-            this.toolMode === 'alternate' ? 'Alternate Mode: Click any stone to apply alternating rhythm' :
-            'Select & Place Mode: Click bead slot to apply selected stone';
+              this.toolMode === 'alternate' ? 'Alternate Mode: Click any stone to apply alternating rhythm' :
+                'Select & Place Mode: Click bead slot to apply selected stone';
         }
       });
     });
@@ -2338,7 +3894,7 @@ class BraceletStudio {
     }
     const symBtn = document.getElementById('btn-symmetry-mirror');
     if (symBtn) symBtn.addEventListener('click', () => this.applySymmetryMirror());
-    
+
     const labelBtn = document.getElementById('btn-toggle-labels');
     if (labelBtn) {
       labelBtn.addEventListener('click', () => {
@@ -2517,7 +4073,7 @@ class BraceletStudio {
         touchStartX = touch.clientX;
         touchStartY = touch.clientY;
         touchMoved = false;
-        
+
         const coords = getCanvasCoords(touch);
         const slotIndex = findBeadAtCoord(coords.x, coords.y);
         if (slotIndex !== -1) {
@@ -2850,11 +4406,16 @@ Studio URL: ${window.location.href}`;
     }
 
     // ============================================================================
-    // Collection Gallery Modal Events (Epic 3)
+    // Collection Gallery Modal & Save/New Actions
     // ============================================================================
     const collectionsModal = document.getElementById('collections-modal');
     const openCollectionsBtn = document.getElementById('btn-open-collections');
     const saveToColBtn = document.getElementById('btn-save-to-collection');
+    const saveAsNewSidebarBtn = document.getElementById('btn-save-as-new-sidebar');
+    const newProjectSidebarBtn = document.getElementById('btn-new-project-sidebar');
+    const headerNewProjectBtn = document.getElementById('btn-header-new-project');
+    const headerSaveChangesBtn = document.getElementById('btn-header-save-changes');
+    const headerSaveAsNewBtn = document.getElementById('btn-header-save-as-new');
     const modalSaveBtn = document.getElementById('btn-modal-save-current');
     const emptySaveBtn = document.getElementById('btn-empty-save-current');
     const closeColBtn = document.getElementById('btn-close-collections-modal');
@@ -2869,21 +4430,51 @@ Studio URL: ${window.location.href}`;
       });
     }
 
+    if (headerNewProjectBtn) {
+      headerNewProjectBtn.addEventListener('click', () => {
+        this.createNewProject(true);
+      });
+    }
+
+    if (newProjectSidebarBtn) {
+      newProjectSidebarBtn.addEventListener('click', () => {
+        this.createNewProject(true);
+      });
+    }
+
+    if (headerSaveChangesBtn) {
+      headerSaveChangesBtn.addEventListener('click', () => {
+        this.saveCurrentDesign(false);
+      });
+    }
+
+    if (headerSaveAsNewBtn) {
+      headerSaveAsNewBtn.addEventListener('click', () => {
+        this.saveCurrentDesign(true);
+      });
+    }
+
     if (saveToColBtn) {
       saveToColBtn.addEventListener('click', () => {
-        this.saveCurrentDesign();
+        this.saveCurrentDesign(false);
+      });
+    }
+
+    if (saveAsNewSidebarBtn) {
+      saveAsNewSidebarBtn.addEventListener('click', () => {
+        this.saveCurrentDesign(true);
       });
     }
 
     if (modalSaveBtn) {
       modalSaveBtn.addEventListener('click', () => {
-        this.saveCurrentDesign();
+        this.saveCurrentDesign(false);
       });
     }
 
     if (emptySaveBtn) {
       emptySaveBtn.addEventListener('click', () => {
-        this.saveCurrentDesign();
+        this.saveCurrentDesign(false);
       });
     }
 
@@ -3301,14 +4892,32 @@ Bead Sequence: ${this.beads.map((b, i) => `#${i + 1}:${b}`).join(', ')}`;
     const fullColClearSearch = document.getElementById('btn-full-col-clear-search');
     const fullColStatusFilter = document.getElementById('full-col-status-filter');
 
-    if (fullColSaveBtn) fullColSaveBtn.addEventListener('click', () => this.saveCurrentDesign());
-    if (fullColNewBtn) fullColNewBtn.addEventListener('click', () => {
-      this.currentProductId = null;
-      this.applyPreset('wealth', false);
-      this.saveHistoryState();
-      this.switchView('studio');
-      this.showToast('Started fresh custom design in Studio!', 'info');
-    });
+    if (fullColSaveBtn) fullColSaveBtn.addEventListener('click', () => this.saveCurrentDesign(false));
+    if (fullColNewBtn) fullColNewBtn.addEventListener('click', () => this.createNewProject(true));
+
+    const fullColExportPdfBtn = document.getElementById('btn-full-col-export-pdf');
+    if (fullColExportPdfBtn) {
+      fullColExportPdfBtn.addEventListener('click', () => {
+        const activePill = document.querySelector('#full-col-cat-pills .col-pill.active');
+        const filterCat = activePill ? activePill.dataset.cat : 'all';
+        const filterStatus = fullColStatusFilter ? fullColStatusFilter.value : 'all';
+        PDFCatalogExporter.exportCollectionPDF(this, filterCat, filterStatus);
+      });
+    }
+
+    const modalExportPdfBtn = document.getElementById('btn-modal-export-pdf');
+    if (modalExportPdfBtn) {
+      modalExportPdfBtn.addEventListener('click', () => {
+        PDFCatalogExporter.exportCollectionPDF(this, 'all', 'all');
+      });
+    }
+
+    const cancelPdfBtn = document.getElementById('btn-cancel-pdf-export');
+    if (cancelPdfBtn) {
+      cancelPdfBtn.addEventListener('click', () => {
+        PDFCatalogExporter.cancel();
+      });
+    }
 
     if (fullColSearch) {
       fullColSearch.addEventListener('input', () => this.renderFullCollectionsGrid());
@@ -3416,18 +5025,155 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
   }
 
   // ============================================================================
-  // Collection Gallery Operations (Epic 3)
+  // Project Lifecycle, Overwrite Protection & Save As New Workflows
   // ============================================================================
-  updateCollectionCountBadge() {
-    const count = StorageManager.getCount();
-    const headerBadge = document.getElementById('header-collection-count');
-    if (headerBadge) headerBadge.textContent = count;
-
-    const modalBadge = document.getElementById('modal-collection-count-badge');
-    if (modalBadge) modalBadge.textContent = `${count} ${count === 1 ? 'Design' : 'Designs'}`;
+  createNewProject(confirmIfDirty = true) {
+    if (this.isDirty && confirmIfDirty) {
+      this.promptUnsavedChangesModal({
+        onSaveAndProceed: () => {
+          this.saveCurrentDesign(false);
+          this.executeCreateNewProject();
+        },
+        onSaveAsNewAndProceed: () => {
+          this.openSaveAsNewModal(() => {
+            this.executeCreateNewProject();
+          });
+        },
+        onDiscardAndProceed: () => {
+          this.executeCreateNewProject();
+        }
+      });
+      return;
+    }
+    this.executeCreateNewProject();
   }
 
-  saveCurrentDesign() {
+  executeCreateNewProject() {
+    this.currentProductId = null;
+    this.totalBits = 22;
+    this.beadDiameterMm = 8;
+    this.cordType = 'elastic';
+    const all = StorageManager.getAll();
+    const nextVariant = (all.length + 1).toString().padStart(3, '0');
+    this.product = {
+      title: 'Solar Abundance & Manifestation Bracelet',
+      sku: SKUManager.generateSKU(PRESETS.wealth || ['citrine', 'amethyst'], 22, 8, nextVariant),
+      category: 'wealth',
+      status: 'active',
+      isCustomTitle: false,
+      isCustomSKU: false,
+      variant: nextVariant
+    };
+    this.applyPreset('wealth', false);
+    this.markClean();
+    this.saveHistoryState();
+    this.updateUI();
+    this.drawBracelet();
+    if (this.currentView !== 'studio') {
+      this.switchView('studio');
+    }
+    this.showToast('Created new blank bracelet project!', 'info');
+  }
+
+  promptUnsavedChangesModal(callbacks) {
+    const modal = document.getElementById('unsaved-changes-modal');
+    const titleSpan = document.getElementById('unsaved-project-title');
+    if (!modal) return;
+
+    if (titleSpan) titleSpan.textContent = this.product.title || this.product.sku || 'Current Design';
+    this.unsavedCallbacks = callbacks;
+    modal.style.display = 'flex';
+  }
+
+  openSaveAsNewModal(onSuccessCallback = null) {
+    const modal = document.getElementById('save-as-new-modal');
+    const titleInp = document.getElementById('save-as-title-input');
+    const skuPreview = document.getElementById('save-as-sku-preview');
+    const catSelect = document.getElementById('save-as-category-select');
+    if (!modal) return;
+
+    const all = StorageManager.getAll();
+    const nextVariant = (all.length + 1).toString().padStart(3, '0');
+    const newSku = SKUManager.generateSKU(this.beads, this.totalBits, this.beadDiameterMm, nextVariant);
+
+    if (titleInp) titleInp.value = `${this.product.title} (Copy)`;
+    if (skuPreview) skuPreview.textContent = newSku;
+    if (catSelect) catSelect.value = this.product.category || 'wealth';
+
+    this.saveAsCallback = onSuccessCallback;
+    modal.style.display = 'flex';
+  }
+
+  confirmSaveAsNew() {
+    const titleInp = document.getElementById('save-as-title-input');
+    const catSelect = document.getElementById('save-as-category-select');
+    const all = StorageManager.getAll();
+    const nextVariant = (all.length + 1).toString().padStart(3, '0');
+    const newSku = SKUManager.generateSKU(this.beads, this.totalBits, this.beadDiameterMm, nextVariant);
+    const newTitle = titleInp ? titleInp.value.trim() || `${this.product.title} (Copy)` : `${this.product.title} (Copy)`;
+    const newCat = catSelect ? catSelect.value : (this.product.category || 'wealth');
+
+    const p = this.pricing || PricingEngine.calculate(this.beads);
+    const currentUser = FirebaseManager.currentUser || { displayName: 'Artisan', email: 'artisan@aurasources.in' };
+    const authorStamp = {
+      uid: currentUser.uid || 'artisan',
+      displayName: currentUser.displayName || 'Artisan',
+      email: currentUser.email || ''
+    };
+
+    const newId = `ac_prod_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const payload = {
+      id: newId,
+      title: newTitle,
+      sku: newSku,
+      category: newCat,
+      status: this.product.status || 'active',
+      beads: [...this.beads],
+      totalBits: this.totalBits,
+      beadDiameterMm: this.beadDiameterMm,
+      cordType: this.cordType,
+      pricing: {
+        finalSellingPrice: p.finalSellingPrice,
+        mrp: p.mrp,
+        rawGemsCost: p.rawGemsCost
+      },
+      createdBy: authorStamp,
+      lastEditedBy: authorStamp,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const saved = StorageManager.save(payload);
+    if (saved) {
+      this.currentProductId = saved.id;
+      this.product.title = saved.title;
+      this.product.sku = saved.sku;
+      this.product.category = saved.category;
+      this.product.variant = nextVariant;
+      this.product.isCustomTitle = true;
+      this.product.isCustomSKU = true;
+
+      this.markClean();
+      this.updateCollectionCountBadge();
+      this.updateUI();
+      this.showToast(`Created & Saved new project copy "${saved.title}"!`, 'success');
+
+      const modal = document.getElementById('save-as-new-modal');
+      if (modal) modal.style.display = 'none';
+
+      if (this.saveAsCallback) {
+        this.saveAsCallback();
+        this.saveAsCallback = null;
+      }
+    }
+  }
+
+  saveCurrentDesign(saveAsNew = false) {
+    if (saveAsNew) {
+      this.openSaveAsNewModal();
+      return;
+    }
+
     const p = this.pricing || PricingEngine.calculate(this.beads);
     const payload = {
       id: this.currentProductId || undefined,
@@ -3449,14 +5195,265 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     const saved = StorageManager.save(payload);
     if (saved) {
       this.currentProductId = saved.id;
+      this.markClean();
       this.updateCollectionCountBadge();
-      this.showToast(`Saved "${saved.title}" to collection!`);
+      this.showToast(`Saved changes to "${saved.title}" (${saved.sku})!`, 'success');
 
       const modal = document.getElementById('collections-modal');
       if (modal && modal.style.display !== 'none') {
         this.renderCollectionGrid();
       }
     }
+  }
+
+  // ============================================================================
+  // Team Collaboration & Firebase Auth Events
+  // ============================================================================
+  initTeamAuthEvents() {
+    const teamModal = document.getElementById('team-auth-modal');
+    const teamBtn = document.getElementById('btn-team-profile');
+    const syncBadge = document.getElementById('cloud-sync-badge');
+    const closeBtn = document.getElementById('btn-close-team-modal');
+    const doneBtn = document.getElementById('btn-close-team-auth');
+    const googleBtn = document.getElementById('btn-auth-google');
+    const emailSignInBtn = document.getElementById('btn-auth-email-signin');
+    const emailSignUpBtn = document.getElementById('btn-auth-email-signup');
+    const guestBtn = document.getElementById('btn-auth-guest-mode');
+    const signOutBtn = document.getElementById('btn-auth-signout');
+
+    const openTeamModal = () => {
+      FirebaseManager.updateUserUI();
+      if (teamModal) teamModal.style.display = 'flex';
+    };
+
+    if (teamBtn) teamBtn.addEventListener('click', openTeamModal);
+    if (syncBadge) syncBadge.addEventListener('click', openTeamModal);
+    if (closeBtn) closeBtn.addEventListener('click', () => { if (teamModal) teamModal.style.display = 'none'; });
+    if (doneBtn) doneBtn.addEventListener('click', () => { if (teamModal) teamModal.style.display = 'none'; });
+
+    // Google Sign In
+    if (googleBtn) {
+      googleBtn.addEventListener('click', async () => {
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+          try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            await firebase.auth().signInWithPopup(provider);
+            this.showToast('Signed in with Google!', 'success');
+            if (teamModal) teamModal.style.display = 'none';
+          } catch (err) {
+            console.warn('Google sign-in error:', err);
+            this.showToast(`Sign in: ${err.message}`, 'error');
+          }
+        } else {
+          this.showToast('Firebase Auth SDK active in local simulation mode.', 'info');
+        }
+      });
+    }
+
+    // Email Sign In
+    if (emailSignInBtn) {
+      emailSignInBtn.addEventListener('click', async () => {
+        const email = document.getElementById('auth-email-input')?.value.trim();
+        const password = document.getElementById('auth-password-input')?.value;
+        const displayName = document.getElementById('auth-display-name-input')?.value.trim();
+
+        if (!email || !password) {
+          this.showToast('Please enter an email and password.', 'error');
+          return;
+        }
+
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+          try {
+            await firebase.auth().signInWithEmailAndPassword(email, password);
+            this.showToast('Signed in to team catalog!', 'success');
+            if (teamModal) teamModal.style.display = 'none';
+          } catch (err) {
+            // If user not found, try creating account
+            try {
+              const res = await firebase.auth().createUserWithEmailAndPassword(email, password);
+              if (displayName && res.user) {
+                await res.user.updateProfile({ displayName });
+              }
+              this.showToast('Registered & signed into team workspace!', 'success');
+              if (teamModal) teamModal.style.display = 'none';
+            } catch (createErr) {
+              this.showToast(`Auth error: ${err.message}`, 'error');
+            }
+          }
+        } else {
+          // Local fallback
+          FirebaseManager.currentUser = {
+            uid: 'artisan_' + Date.now(),
+            displayName: displayName || email.split('@')[0],
+            email,
+            isAnonymous: false
+          };
+          localStorage.setItem('auracraft_team_user', JSON.stringify(FirebaseManager.currentUser));
+          FirebaseManager.updateUserUI();
+          this.showToast(`Signed in as ${FirebaseManager.currentUser.displayName}`, 'success');
+          if (teamModal) teamModal.style.display = 'none';
+        }
+      });
+    }
+
+    // Email Sign Up
+    if (emailSignUpBtn) {
+      emailSignUpBtn.addEventListener('click', async () => {
+        const email = document.getElementById('auth-email-input')?.value.trim();
+        const password = document.getElementById('auth-password-input')?.value;
+        const displayName = document.getElementById('auth-display-name-input')?.value.trim();
+
+        if (!email || !password) {
+          this.showToast('Please enter an email and password to register.', 'error');
+          return;
+        }
+
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+          try {
+            const res = await firebase.auth().createUserWithEmailAndPassword(email, password);
+            if (displayName && res.user) {
+              await res.user.updateProfile({ displayName });
+            }
+            this.showToast('Registered team member account!', 'success');
+            if (teamModal) teamModal.style.display = 'none';
+          } catch (err) {
+            this.showToast(`Registration: ${err.message}`, 'error');
+          }
+        } else {
+          FirebaseManager.currentUser = {
+            uid: 'artisan_' + Date.now(),
+            displayName: displayName || email.split('@')[0],
+            email,
+            isAnonymous: false
+          };
+          localStorage.setItem('auracraft_team_user', JSON.stringify(FirebaseManager.currentUser));
+          FirebaseManager.updateUserUI();
+          this.showToast(`Registered as ${FirebaseManager.currentUser.displayName}`, 'success');
+          if (teamModal) teamModal.style.display = 'none';
+        }
+      });
+    }
+
+    // Guest Mode
+    if (guestBtn) {
+      guestBtn.addEventListener('click', () => {
+        const displayName = document.getElementById('auth-display-name-input')?.value.trim() || 'Artisan Guest';
+        FirebaseManager.currentUser = {
+          uid: 'guest_' + Math.random().toString(36).substr(2, 6),
+          displayName,
+          email: 'guest@aurasources.in',
+          isAnonymous: true
+        };
+        localStorage.setItem('auracraft_team_user', JSON.stringify(FirebaseManager.currentUser));
+        FirebaseManager.updateUserUI();
+        this.showToast(`Continuing as ${displayName}`, 'info');
+        if (teamModal) teamModal.style.display = 'none';
+      });
+    }
+
+    // Sign Out
+    if (signOutBtn) {
+      signOutBtn.addEventListener('click', async () => {
+        if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+          await firebase.auth().signOut();
+        }
+        localStorage.removeItem('auracraft_team_user');
+        FirebaseManager.currentUser = {
+          uid: 'guest_' + Math.random().toString(36).substr(2, 6),
+          displayName: 'Artisan',
+          email: 'guest@aurasources.in',
+          isAnonymous: true
+        };
+        FirebaseManager.updateUserUI();
+        this.showToast('Signed out of team workspace.', 'info');
+        if (teamModal) teamModal.style.display = 'none';
+      });
+    }
+
+    // Unsaved Changes Modal Actions
+    const unsavedModal = document.getElementById('unsaved-changes-modal');
+    const btnUnsavedSave = document.getElementById('btn-unsaved-save-and-proceed');
+    const btnUnsavedSaveAs = document.getElementById('btn-unsaved-save-as-new');
+    const btnUnsavedDiscard = document.getElementById('btn-unsaved-discard');
+    const btnUnsavedCancel = document.getElementById('btn-unsaved-cancel');
+    const btnCloseUnsaved = document.getElementById('btn-close-unsaved-modal');
+
+    if (btnUnsavedSave) {
+      btnUnsavedSave.addEventListener('click', () => {
+        if (unsavedModal) unsavedModal.style.display = 'none';
+        if (this.unsavedCallbacks?.onSaveAndProceed) {
+          this.unsavedCallbacks.onSaveAndProceed();
+          this.unsavedCallbacks = null;
+        }
+      });
+    }
+    if (btnUnsavedSaveAs) {
+      btnUnsavedSaveAs.addEventListener('click', () => {
+        if (unsavedModal) unsavedModal.style.display = 'none';
+        if (this.unsavedCallbacks?.onSaveAsNewAndProceed) {
+          this.unsavedCallbacks.onSaveAsNewAndProceed();
+          this.unsavedCallbacks = null;
+        }
+      });
+    }
+    if (btnUnsavedDiscard) {
+      btnUnsavedDiscard.addEventListener('click', () => {
+        if (unsavedModal) unsavedModal.style.display = 'none';
+        if (this.unsavedCallbacks?.onDiscardAndProceed) {
+          this.unsavedCallbacks.onDiscardAndProceed();
+          this.unsavedCallbacks = null;
+        }
+      });
+    }
+    if (btnUnsavedCancel) {
+      btnUnsavedCancel.addEventListener('click', () => {
+        if (unsavedModal) unsavedModal.style.display = 'none';
+        this.unsavedCallbacks = null;
+      });
+    }
+    if (btnCloseUnsaved) {
+      btnCloseUnsaved.addEventListener('click', () => {
+        if (unsavedModal) unsavedModal.style.display = 'none';
+        this.unsavedCallbacks = null;
+      });
+    }
+
+    // Save As New Modal Actions
+    const saveAsModal = document.getElementById('save-as-new-modal');
+    const btnConfirmSaveAs = document.getElementById('btn-confirm-save-as');
+    const btnCancelSaveAs = document.getElementById('btn-cancel-save-as');
+    const btnCloseSaveAs = document.getElementById('btn-close-save-as-modal');
+
+    if (btnConfirmSaveAs) {
+      btnConfirmSaveAs.addEventListener('click', () => this.confirmSaveAsNew());
+    }
+    if (btnCancelSaveAs) {
+      btnCancelSaveAs.addEventListener('click', () => {
+        if (saveAsModal) saveAsModal.style.display = 'none';
+        this.saveAsCallback = null;
+      });
+    }
+    if (btnCloseSaveAs) {
+      btnCloseSaveAs.addEventListener('click', () => {
+        if (saveAsModal) saveAsModal.style.display = 'none';
+        this.saveAsCallback = null;
+      });
+    }
+  }
+
+  // ============================================================================
+  // Collection Gallery Operations (Epic 3)
+  // ============================================================================
+  updateCollectionCountBadge() {
+    const count = StorageManager.getCount();
+    const headerBadge = document.getElementById('header-collection-count');
+    if (headerBadge) headerBadge.textContent = count;
+
+    const modalBadge = document.getElementById('modal-collection-count-badge');
+    if (modalBadge) modalBadge.textContent = `${count} ${count === 1 ? 'Design' : 'Designs'}`;
+
+    const navBadge = document.getElementById('nav-collection-count');
+    if (navBadge) navBadge.textContent = count;
   }
 
   openCollectionsModal() {
@@ -3513,7 +5510,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
       const pPricing = product.pricing || PricingEngine.calculate(product.beads);
       const card = document.createElement('div');
       card.className = 'collection-card';
-      
+
       const categoryLabel = (product.category || 'wealth').toUpperCase();
       const statusClass = product.status || 'active';
       const statusText = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
@@ -3541,6 +5538,9 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
           <button class="col-action-btn primary btn-load-design" title="Load into studio">
             <i class="fa-solid fa-arrow-up-right-from-square"></i> Load
           </button>
+          <button class="col-action-btn btn-pdf-design" title="Download Luxury PDF Spec Sheet">
+            <i class="fa-solid fa-file-pdf"></i>
+          </button>
           <button class="col-action-btn btn-duplicate-design" title="Duplicate design">
             <i class="fa-solid fa-clone"></i>
           </button>
@@ -3556,6 +5556,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
 
       // Event listeners
       card.querySelector('.btn-load-design').addEventListener('click', () => this.loadDesignIntoStudio(product.id));
+      card.querySelector('.btn-pdf-design').addEventListener('click', () => PDFCatalogExporter.exportSingleProjectPDF(this, product));
       card.querySelector('.btn-duplicate-design').addEventListener('click', () => this.duplicateDesign(product.id));
       card.querySelector('.btn-delete-design').addEventListener('click', () => this.deleteDesign(product.id));
 
@@ -3563,7 +5564,28 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     });
   }
 
-  loadDesignIntoStudio(id) {
+  loadDesignIntoStudio(id, confirmIfDirty = true) {
+    if (this.isDirty && confirmIfDirty) {
+      this.promptUnsavedChangesModal({
+        onSaveAndProceed: () => {
+          this.saveCurrentDesign(false);
+          this.executeLoadDesignIntoStudio(id);
+        },
+        onSaveAsNewAndProceed: () => {
+          this.openSaveAsNewModal(() => {
+            this.executeLoadDesignIntoStudio(id);
+          });
+        },
+        onDiscardAndProceed: () => {
+          this.executeLoadDesignIntoStudio(id);
+        }
+      });
+      return;
+    }
+    this.executeLoadDesignIntoStudio(id);
+  }
+
+  executeLoadDesignIntoStudio(id) {
     const product = StorageManager.getById(id);
     if (!product) return;
 
@@ -3572,7 +5594,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     this.beadDiameterMm = product.beadDiameterMm || 8;
     this.cordType = product.cordType || 'elastic';
     this.beads = [...product.beads];
-    
+
     this.product = {
       title: product.title,
       sku: product.sku,
@@ -3580,7 +5602,11 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
       status: product.status || 'active',
       isCustomTitle: true,
       isCustomSKU: true,
-      variant: product.sku ? (product.sku.split('-').pop() || '001') : '001'
+      variant: product.sku ? (product.sku.split('-').pop() || '001') : '001',
+      createdBy: product.createdBy,
+      createdAt: product.createdAt,
+      lastEditedBy: product.lastEditedBy,
+      lastEditedAt: product.lastEditedAt
     };
 
     // Update UI Controls
@@ -3615,6 +5641,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
       statusBadge.textContent = this.product.status.charAt(0).toUpperCase() + this.product.status.slice(1);
     }
 
+    this.markClean();
     this.saveHistoryState();
     this.updateUI();
     this.drawBracelet();
@@ -3659,7 +5686,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
         this.beadDiameterMm = shared.d || 8;
         this.cordType = shared.c || 'elastic';
         this.beads = [...shared.b];
-        
+
         this.product = {
           title: shared.t || 'Shared Custom Bracelet',
           sku: shared.s || SKUManager.generateSKU(this.beads, this.totalBits, this.beadDiameterMm),
@@ -3812,7 +5839,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
 
     const p = this.pricing || PricingEngine.calculate(this.beads);
     const approxCircumference = ((this.totalBits * (this.beadDiameterMm + 0.4)) / 10).toFixed(1);
-    
+
     // Product Title & SKU in Summary Modal (Epic 2)
     const modalTitle = document.getElementById('modal-product-title');
     if (modalTitle) modalTitle.textContent = this.product.title;
@@ -3824,7 +5851,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     document.getElementById('modal-bead-size').textContent = `${this.beadDiameterMm} mm`;
     document.getElementById('modal-summary-selling-price').textContent = `₹${p.finalSellingPrice.toFixed(2)}`;
     document.getElementById('modal-summary-mrp').textContent = `₹${p.mrp.toFixed(2)}`;
-    
+
     const cordSelect = document.getElementById('cord-type-select');
     if (cordSelect) {
       document.getElementById('modal-cord-type').textContent = cordSelect.options[cordSelect.selectedIndex].text;
@@ -3870,7 +5897,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
 
   populatePrintableSpecSheet() {
     const p = this.pricing || PricingEngine.calculate(this.beads);
-    
+
     // 1. Meta / Header
     const jobIdElem = document.getElementById('print-job-id');
     if (jobIdElem) {
@@ -3914,8 +5941,8 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     const dimCord = document.getElementById('print-dim-cord');
     if (dimCord) {
       const cordSelect = document.getElementById('cord-type-select');
-      const cordName = (cordSelect && cordSelect.options && cordSelect.selectedIndex >= 0 && cordSelect.options[cordSelect.selectedIndex]) 
-        ? cordSelect.options[cordSelect.selectedIndex].text 
+      const cordName = (cordSelect && cordSelect.options && cordSelect.selectedIndex >= 0 && cordSelect.options[cordSelect.selectedIndex])
+        ? cordSelect.options[cordSelect.selectedIndex].text
         : 'Elastic Stretch Thread (0.8mm)';
       dimCord.textContent = cordName;
     }
@@ -4019,11 +6046,15 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     setCost('print-cost-mrp', p.mrp);
   }
 
-  printSpecSheet() {
-    this.populatePrintableSpecSheet();
-    setTimeout(() => {
-      window.print();
-    }, 80);
+  printSpecSheet(project = null) {
+    if (typeof PDFCatalogExporter !== 'undefined' && typeof window.jspdf !== 'undefined') {
+      PDFCatalogExporter.exportSingleProjectPDF(this, project);
+    } else {
+      this.populatePrintableSpecSheet();
+      setTimeout(() => {
+        window.print();
+      }, 80);
+    }
   }
 
   showToast(message, type = 'info', title = null, duration = 2800) {
@@ -4408,7 +6439,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
           <div><span>Hardness:</span> <strong>${stone.hardness || '7.0'} Mohs</strong></div>
           <div><span>Zodiac:</span> <strong>${stone.zodiac || 'All Signs'}</strong></div>
           <div><span>Element:</span> <strong>${stone.element || 'Earth'}</strong></div>
-          <div><span>SKU Code:</span> <strong>${stone.code || stone.name.substring(0,3).toUpperCase()}</strong></div>
+          <div><span>SKU Code:</span> <strong>${stone.code || stone.name.substring(0, 3).toUpperCase()}</strong></div>
         </div>
         <div class="gemstone-fullcard-actions">
           <button class="action-btn primary full-width btn-full-select" style="flex: 1;"><i class="fa-solid fa-palette"></i> Select for Studio</button>
@@ -4443,7 +6474,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     const filteredStones = STONES_DB.filter(st => {
       if (!query) return true;
       return (
-        st.name.toLowerCase().includes(query) || 
+        st.name.toLowerCase().includes(query) ||
         (st.chakra && st.chakra.toLowerCase().includes(query)) ||
         (st.alias && st.alias.toLowerCase().includes(query))
       );
@@ -4568,9 +6599,9 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     const filtered = items.filter(p => {
       const matchCat = (activeCat === 'all') || (p.category === activeCat);
       const matchStatus = (activeStatus === 'all') || (p.status === activeStatus);
-      const matchQuery = !query || 
-        p.title.toLowerCase().includes(query) || 
-        p.sku.toLowerCase().includes(query) || 
+      const matchQuery = !query ||
+        p.title.toLowerCase().includes(query) ||
+        p.sku.toLowerCase().includes(query) ||
         (p.beads && p.beads.some(b => b.toLowerCase().includes(query)));
       return matchCat && matchStatus && matchQuery;
     });
@@ -4590,7 +6621,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
       const pPricing = product.pricing || PricingEngine.calculate(product.beads);
       const card = document.createElement('div');
       card.className = 'collection-card';
-      
+
       const categoryLabel = (product.category || 'wealth').toUpperCase();
       const statusClass = product.status || 'active';
       const statusText = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
@@ -4616,6 +6647,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
         </div>
         <div class="collection-card-actions">
           <button class="col-action-btn primary btn-full-col-load"><i class="fa-solid fa-palette"></i> Load</button>
+          <button class="col-action-btn btn-full-col-pdf" title="Download Luxury PDF Spec Sheet"><i class="fa-solid fa-file-pdf"></i> PDF</button>
           <button class="col-action-btn btn-full-col-dup" title="Duplicate"><i class="fa-solid fa-copy"></i> Copy</button>
           <button class="col-action-btn danger btn-full-col-del" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
         </div>
@@ -4630,6 +6662,10 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
       card.querySelector('.btn-full-col-load').addEventListener('click', () => {
         this.loadDesignIntoStudio(product.id);
         this.switchView('studio');
+      });
+
+      card.querySelector('.btn-full-col-pdf').addEventListener('click', () => {
+        PDFCatalogExporter.exportSingleProjectPDF(this, product);
       });
 
       card.querySelector('.btn-full-col-dup').addEventListener('click', () => {
@@ -4671,7 +6707,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     // Social Links
     const encodedUrl = encodeURIComponent(url);
     const text = encodeURIComponent(`Check out my custom AuraCraft gemstone bracelet design: ${this.product.title} (SKU: ${this.product.sku})!`);
-    
+
     const waBtn = document.getElementById('btn-full-share-whatsapp');
     if (waBtn) waBtn.href = `https://api.whatsapp.com/send?text=${text}%20${encodedUrl}`;
 
@@ -4790,7 +6826,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
           statusMsg.className = 'auth-status-msg success';
           statusMsg.textContent = 'Passcode accepted. Welcome to Atelier!';
         }
-        
+
         const remember = document.getElementById('auth-remember-session');
         if (remember && remember.checked && typeof localStorage !== 'undefined') {
           localStorage.setItem('auracraft_auth_token', 'authenticated');

@@ -4690,4 +4690,293 @@ body {
   cursor: pointer;
 }
 
+/* ==========================================================================
+   Project Lifecycle, Overwrite Protection & Header Status Banner
+   ========================================================================== */
+.header-project-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(18, 18, 22, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(12px);
+}
 
+.project-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.status-indicator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399; /* clean saved green */
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+  transition: all var(--transition-fast);
+}
+
+.project-status-pill.dirty .status-indicator-dot {
+  background: #f59e0b; /* dirty / unsaved amber */
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+  animation: pulseAmber 1.8s infinite ease-in-out;
+}
+
+.project-status-pill.draft .status-indicator-dot {
+  background: #60a5fa; /* draft blue */
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
+}
+
+@keyframes pulseAmber {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.header-sku-chip {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  background: rgba(201, 169, 110, 0.12);
+  color: var(--accent-gold-light);
+  border: 1px solid rgba(201, 169, 110, 0.25);
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.save-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.header-new-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.header-new-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.save-as-btn {
+  background: rgba(201, 169, 110, 0.08);
+  border: 1px solid rgba(201, 169, 110, 0.2);
+  color: var(--accent-gold-light);
+}
+.save-as-btn:hover {
+  background: rgba(201, 169, 110, 0.18);
+  border-color: var(--accent-gold);
+}
+
+.icon-only-btn {
+  padding: 8px 10px !important;
+}
+
+/* ==========================================================================
+   Firebase Realtime Cloud Sync & Team Collaboration
+   ========================================================================== */
+.cloud-sync-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(18, 18, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.cloud-sync-badge.synced {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.25);
+}
+.cloud-sync-badge.syncing {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+.cloud-sync-badge.syncing i {
+  animation: spin 1s linear infinite;
+}
+.cloud-sync-badge.offline {
+  color: var(--text-muted);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.team-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 6px !important;
+  background: rgba(201, 169, 110, 0.08);
+  border: 1px solid rgba(201, 169, 110, 0.25);
+  color: var(--text-primary);
+  border-radius: 20px;
+}
+.team-user-btn:hover {
+  background: rgba(201, 169, 110, 0.16);
+  border-color: var(--accent-gold);
+}
+
+.user-avatar-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-gold), #b38f50);
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.user-avatar-large {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-gold), #b38f50);
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.team-profile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
+.team-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.team-profile-info h4 {
+  font-size: 0.95rem;
+  color: #fff;
+  margin-bottom: 2px;
+}
+.team-profile-info p {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.team-sync-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 10px;
+}
+.sync-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sync-stat-item .stat-lbl {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+.sync-stat-item .stat-val {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.auth-separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--text-subtle);
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+  margin: 14px 0 10px 0;
+}
+.auth-separator::before, .auth-separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.auth-separator span {
+  padding: 0 10px;
+}
+
+.project-audit-stamp {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.project-audit-stamp i {
+  color: var(--accent-gold);
+}
+
+/* ==========================================================================
+   BULK PDF COLLECTION CATALOG EXPORTER & MODAL
+   ========================================================================== */
+.pdf-progress-track {
+  position: relative;
+}
+
+.pdf-progress-fill {
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+  background-size: 20px 20px;
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.15) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 75%,
+    transparent
+  );
+  animation: progressStripes 1s linear infinite;
+}
+
+@keyframes progressStripes {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 0; }
+}
+
+.action-btn.gold#btn-full-col-export-pdf {
+  background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%);
+  color: #0b0d11;
+  font-weight: 600;
+  border: 1px solid #f3e5ab;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+  transition: all 0.2s ease;
+}
+
+.action-btn.gold#btn-full-col-export-pdf:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.4);
+  background: linear-gradient(135deg, #e5c158 0%, #c9971c 100%);
+}
