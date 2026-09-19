@@ -5894,6 +5894,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
     const result = BackupEngine.restoreBackup(this.stagedBackupData, selectedMode);
 
     if (result.success) {
+      StorageManager.getAll().forEach(p => FirebaseManager.pushProject(p));
       this.updateCollectionCountBadge();
       this.renderCollectionGrid();
       this.renderStonesCatalog();
@@ -6850,6 +6851,7 @@ ${p.stoneBreakdown.map(s => `- ${s.name}: ${s.count}x (₹${s.unitPrice.toFixed(
 
     const result = BackupEngine.restoreBackup(this.stagedBackupData, mode);
     if (result.success) {
+      StorageManager.getAll().forEach(p => FirebaseManager.pushProject(p));
       this.updateCollectionCountBadge();
       this.renderFullCollectionsGrid();
 
